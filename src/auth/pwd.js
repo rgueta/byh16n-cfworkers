@@ -1,12 +1,15 @@
-import { bcrypt } from "bcrypt-web";
+const encoder = new TextEncoder();
 
-// Verificar contraseña existente
-async function verifyPwd(pwd, bcryptHash) {
-  return await bcrypt.compare(pwd, bcryptHash);
+export async function hashPwd(password, salt) {
+  const data = encoder.encode(password + salt);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+
+  return [...new Uint8Array(hashBuffer)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
-// Crear nuevo hash (para nuevos usuarios)
-async function hashPwd(pwd) {
-  const salt = await bcrypt.genSalt(10);
-  return await bcrypt.hash(pwd, salt);
+export async function verifyPwd(password, salt, hash) {
+  const newHash = await hashPwd(password, salt);
+  return newHash === hash;
 }

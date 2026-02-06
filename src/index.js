@@ -64,6 +64,13 @@ app.post("/auth/register", async (c) => {
   return c.json({ ok: true });
 });
 
+app.post("/pwd/show", async (c) => {
+  const { email, password } = await c.req.json();
+  const hash = await hashPwd(password, email.toLowerCase());
+  console.log("pwd: ", hash);
+  return c.json({ ok: true, pwd: hash });
+});
+
 app.get("/", (c) => c.text("OK"));
 
 app.route("/api/users", users);
