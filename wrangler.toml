@@ -5,7 +5,8 @@ compatibility_date = "2025-01-01"
 [vars]
 NODE_ENV = "development"
 APP_NAME = "cf-api"
-MONGO_APP_ID = "opmiyeka"
-MONGO_API_KEY = "c1ead0d8-b623-4068-9d41-84333a81f570"
-MONGO_CLUSTER = "0"
-MONGO_DB = "byh16"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "byh16"
+database_id = "c4418813-ba2e-48ab-a6f5-1b27375d2ebd"

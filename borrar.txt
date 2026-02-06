@@ -1,0 +1,79 @@
+curl -X POST http://localhost:8787/api/importar \
+   -H "Content-Type: application/json" \
+   -d '{
+   "tabla": "users",
+   "data": {
+        "email: 'ricardogueta@gmail.com',
+        "username: 'rgueta',
+        "pwd: '$2a$10$x/oLyf8L9vR/vCrvuf22se.4nPDYccnF4MpyatRg/bvjD9yw4RlHC',
+        "name: 'Ricardo Gueta',
+        "house: 14,
+        "sim: '6641752182',
+        "gender: 'M',
+        "avatar: './avatar/rjg.jpg',
+        "coreId": ObjectId('625c1d28cc5e1b626205064f'),
+        "location": "MX.BC.TJ.6.CG.SJ",
+        "locked": 0,
+        "uuid": "b8f7c9908aa28584",
+        "updatedAt": "2025-01-17T16:00:11.106",
+        "blocked": false
+    }
+  }'
+------------------------------------------------------------
+
+curl -X POST http://localhost:8787/api/importar \
+   -H "Content-Type: application/json" \
+   -d '{
+   "tabla": "cores",
+   "data": {
+"address": "Hda. San Gabriel 10126",
+"sim": "+526632032532",
+"enable": 1,
+"webService": 1,
+"contact_email": "ricardogueta@gmail.com",
+"contact_name": "",
+"contact_cell": "+526641752182",
+"shortName": "SG",
+"cpuId": 2,
+"name": "San Gabriel",
+"code_expire": 1,
+"email": "ricardogueta@gmail.com",
+"remote": 1
+   }
+  }'
+
+-----------------------------------------------------
+
+curl -X POST http://localhost:8787/api/importar \
+   -H "Content-Type: application/json" \
+   -d '{
+   "tabla": "users",
+   "data": {
+"email": "ricardogueta@gmail.com",
+"username": "rgueta",
+"pwd": "$2a$10$x/oLyf8L9vR/vCrvuf22se.4nPDYccnF4MpyatRg/bvjD9yw4RlHC",
+"name": "Ricardo Gueta",
+"house": "14",
+"sim": "+526641752182",
+"gender": "M",
+"avatar": "",
+"coreId": 2,
+"location": "MX.BC.TJ.6.CG.SJ",
+"locked": 0,
+"uuid": "b8f7c9908aa28584",
+"blocked": 0
+   }
+  }'
+
+------------------------------------------
+
+ curl -X POST  https://byh16worker.ricardogueta.workers.dev/api/importar \  ❮  
+            -H "Content-Type: application/json" \
+            -d '{
+        "tabla": "userRoles",
+        "data": {
+          "userId",1
+          "roleId":1,
+          "assignedBy":1
+         }
+       }'

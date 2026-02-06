@@ -1,17 +1,23 @@
 import { Hono } from "hono";
-import { mongoRequest } from "../lib/mongo.js";
 
-export const usersRoutes = new Hono();
+const usersRoutes = new Hono();
 
 usersRoutes.get("/:email", async (c) => {
   const email = c.req.param("email");
-  console.log("env: ", c.env);
-  const data = await mongoRequest(c, "findOne", {
-    database: c.env.MONGO_DB,
-    collection: "users",
-    filter: { email },
-  });
-  console.log("data: ", data);
 
-  return c.json(data.document || {});
+  console.log("email: ", email);
+  const data = await c.env.DB.prepare(
+    `select id, email, username, pwd, name, house, sim, gender,
+      avatar, coreId, location, locked, uuid, createdAt, updatedAt,
+      blocked from users where email = ?`,
+  )
+    .bind(email)
+    .first();
+
+  if (!data) {
+    return c.json({ error: "Usuario no encontrado" }, 404);
+  }
+  console.log("data: ", data);
+  return c.json(data || {});
 });
+export default usersRoutes;
