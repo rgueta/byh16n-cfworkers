@@ -2853,6 +2853,7 @@ app2.post("/auth/login", async (c) => {
       u.id,
       u.username,
       u.email,
+      u.pwd,
       GROUP_CONCAT(r.name, ', ') as role,
       COUNT(r.id) as qtyRoles
   FROM users u
@@ -2864,7 +2865,7 @@ app2.post("/auth/login", async (c) => {
   ).bind(email).first();
   if (!user) return c.json({ error: "Invalid credentials" }, 401);
   const valid = await verifyPwd(pwd, email.toLowerCase(), user.pwd);
-  if (!valid) return c.json({ error: "Invalid credentials" }, 401);
+  if (!valid) return c.json({ error: "Invalid credentials" }, 402);
   const token = await createJWT(
     { sub: String(user.id), role: user.role },
     c.env.JWT_SECRET
@@ -2883,8 +2884,8 @@ app2.post("/auth/register", async (c) => {
   return c.json({ ok: true });
 });
 app2.post("/pwd/show", async (c) => {
-  const { email, password } = await c.req.json();
-  const hash = await hashPwd(password, email.toLowerCase());
+  const { email, pwd } = await c.req.json();
+  const hash = await hashPwd(pwd, email.toLowerCase());
   console.log("pwd: ", hash);
   return c.json({ ok: true, pwd: hash });
 });
