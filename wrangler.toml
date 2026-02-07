@@ -5,8 +5,14 @@ compatibility_date = "2025-01-01"
 [vars]
 NODE_ENV = "development"
 APP_NAME = "cf-api"
+JWT_SECRET="long-life-bytheg-project-123456789"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "byh16"
 database_id = "c4418813-ba2e-48ab-a6f5-1b27375d2ebd"
+
+[[kv_namespaces]]
+binding = "REFRESH_KV"
+id = "bd49fbf6ef30464e9241a9b21452f1cc"
+preview_id = ""

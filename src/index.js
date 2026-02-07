@@ -4,9 +4,10 @@ import importar from "./routes/importar.js";
 import users from "./routes/users.js";
 
 // ----  JWT  -----
-import { createJWT } from "./auth/jwt.js";
 import { authMiddleware } from "./auth/middleware.js";
-import { hashPwd, verifyPwd } from "./auth/pwd.js";
+import { hashPwd, verifyPwd, sha256 } from "./auth/pwd.js";
+import { createAccessToken, createRefreshToken } from "./auth/tokens.js";
+
 //-------- DB ----------
 
 const app = new Hono();
@@ -37,14 +38,65 @@ app.post("/auth/login", async (c) => {
 
   const valid = await verifyPwd(pwd, email.toLowerCase(), user.pwd);
 
-  if (!valid) return c.json({ error: "Invalid credentials" }, 402);
+  if (!valid) return c.json({ error: "Invalid credentials" }, 401);
 
-  const token = await createJWT(
-    { sub: String(user.id), role: user.role },
-    c.env.JWT_SECRET,
-  );
+  const accessToken = await createAccessToken(c, user);
 
-  return c.json({ token });
+  const refreshToken = await createRefreshToken(user.id, c.env.REFRESH_KV);
+
+  return c.json({ accessToken: accessToken, refreshToken: refreshToken });
+});
+
+app.post("/auth/refresh", async (c) => {
+  const { refreshToken } = await c.req.json();
+  if (!refreshToken) {
+    return c.json({ error: "No refresh token" }, 400);
+  }
+
+  const hash = await sha256(refreshToken);
+  const userId = await c.env.REFRESH_KV.get(`refresh:${hash}`);
+
+  if (!userId) {
+    return c.json({ error: "Invalid refresh token" }, 401);
+  }
+
+  const user = await c.env.DB.prepare(
+    `
+      SELECT
+      u.id,
+      GROUP_CONCAT(r.name, ', ') as role,
+      COUNT(r.id) as qtyRoles
+      FROM users u
+      LEFT JOIN userRoles ur ON u.id = ur.userId
+      LEFT JOIN roles r ON ur.roleId = r.id
+      WHERE id = ? AND locked = 0
+      GROUP BY u.id, u.username, u.email
+      `,
+  )
+    .bind(userId)
+    .first();
+
+  if (!user) {
+    return c.json({ error: "User not found" }, 401);
+  }
+
+  const newAccessToken = await createAccessToken(user, c.env.JWT_SECRET);
+
+  return c.json({ accessToken: newAccessToken });
+});
+
+app.post("/auth/logout", async (c) => {
+  const { refreshToken } = await c.req.json();
+  if (!refreshToken) return c.json({ ok: true });
+
+  const hash = await sha256(refreshToken);
+  await c.env.REFRESH_KV.delete(`refresh:${hash}`);
+
+  return c.json({ ok: true });
+});
+
+app.get("/me", authMiddleware(), async (c) => {
+  return c.json(c.get("jwtPayload"));
 });
 
 // Falta completar la informacion completa para la tabla
