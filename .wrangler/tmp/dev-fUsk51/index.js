@@ -3104,7 +3104,6 @@ __name(randomToken, "randomToken");
 
 // src/auth/tokens.js
 async function createAccessToken(c, user) {
-  console.log("secret:", c.env.JWT_SECRET);
   return sign2(
     {
       sub: String(user.id),

@@ -2,7 +2,6 @@ import { sign } from "hono/jwt";
 import { sha256, randomToken } from "./pwd";
 
 export async function createAccessToken(c, user) {
-  console.log("secret:", c.env.JWT_SECRET);
   return sign(
     {
       sub: String(user.id),
