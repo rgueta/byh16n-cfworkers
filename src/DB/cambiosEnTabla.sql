@@ -36,3 +36,7 @@ DROP TABLE users;
 
 -- Renombrar
 ALTER TABLE users_temp RENAME TO users;
+
+
+INSERT INTO configApp (debug,send_sms,backendUrl,localUrl,serverUrl)
+VALUES(0,0,'https://byh16worker.ricardogueta.workers.dev','http://192.168.1.170','https://byh16worker.ricardogueta.workers.dev')
