@@ -20,6 +20,7 @@ export async function hashPwd(password, salt) {
 
 export async function verifyPwd(password, salt, hash) {
   const newHash = await hashPwd(password, salt);
+  console.log("pwd: ", newHash);
   return newHash === hash;
 }
 

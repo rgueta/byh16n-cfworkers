@@ -1,13 +1,27 @@
-import { sign, jwt, verify } from "hono/jwt";
+import { sign } from "hono/jwt";
 import { sha256, randomToken } from "./pwd.js";
 
-export async function createAccessToken(c, user) {
+// Valores por defecto desde environment
+const getDefaults = (c) => ({
+  accessTokenExpiry: parseInt(c.env.ACCESS_TOKEN_EXPIRY) || 2 * 60,
+  refreshTokenExpiry: parseInt(c.env.REFRESH_TOKEN_EXPIRY) || 14 * 24 * 60 * 60,
+});
+
+export async function createAccessToken(c, user, customExpiry = null) {
+  const defaults = getDefaults(c);
+  const expiresInSeconds = customExpiry ?? defaults.accessTokenExpiry;
+
+  const userRole =
+    user.role ||
+    (user.roles && user.roles.length > 0 ? user.roles[0].name : "") ||
+    "";
+
   return sign(
     {
       sub: String(user.id),
-      role: user.role || "",
+      role: userRole || "",
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 60 * 2, // 2 min
+      exp: Math.floor(Date.now() / 1000) + expiresInSeconds,
     },
     c.env.JWT_SECRET,
     "HS256",
@@ -15,6 +29,7 @@ export async function createAccessToken(c, user) {
 }
 
 export async function createRefreshToken(c, userId, userRole = "") {
+  const defaults = getDefaults(c);
   // Generar un JWT refresh token
   const refreshJwt = await sign(
     {
@@ -23,7 +38,7 @@ export async function createRefreshToken(c, userId, userRole = "") {
       type: "refresh", // Tipo de token
       jti: randomToken(16), // ID único del token (JWT ID)
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 14 * 24 * 60 * 60, // 14 días
+      exp: Math.floor(Date.now() / 1000) + defaults.refreshTokenExpiry,
     },
     c.env.JWT_SECRET,
     "HS256",
@@ -37,39 +52,23 @@ export async function createRefreshToken(c, userId, userRole = "") {
     `refresh:${hash}`,
     JSON.stringify({
       userId: String(userId),
+      userRole: userRole,
       issuedAt: Date.now(),
-      expiresAt: Math.floor(Date.now() / 1000) + 14 * 24 * 60 * 60,
+      expiresAt: Math.floor(Date.now() / 1000) + defaults.refreshTokenExpiry,
       // Puedes agregar más metadata como IP, user agent, etc.
     }),
     {
-      expirationTtl: 14 * 24 * 60 * 60, // 14 días
+      expirationTtl: defaults.refreshTokenExpiry,
     },
   );
 
   return refreshJwt; // Devolver el JWT
 }
 
-export const verifyToken = () => {
-  return async (c, next) => {
-    const authHeader = c.req.header("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return c.json({ error: "No token provided" }, 401);
-    }
+export async function getRefreshToken(env, userId) {
+  return env.REFRESH_KV.get(`refresh:${userId}`);
+}
 
-    const token = authHeader.split(" ")[1];
-
-    try {
-      // Verificar el token
-      const payload = await verify(token, c.env.JWT_SECRET, "HS256");
-      c.set("jwtPayload", payload);
-      c.set("userId", payload.sub);
-      return await next();
-    } catch (error) {
-      // Si el token expiró, devolver 401 específico
-      if (error.message.includes("expired")) {
-        return c.json({ error: "Token expired", code: "TOKEN_EXPIRED" }, 401);
-      }
-      return c.json({ error: "Invalid token" }, 401);
-    }
-  };
-};
+export async function deleteRefreshToken(env, userId) {
+  await env.REFRESH_KV.delete(`refresh:${userId}`);
+}

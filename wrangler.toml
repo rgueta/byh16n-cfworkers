@@ -1,4 +1,4 @@
-name = "byh16worker"
+name = "byh16"
 main = "src/index.js"
 compatibility_date = "2025-01-01"
 
@@ -6,6 +6,8 @@ compatibility_date = "2025-01-01"
 NODE_ENV = "development"
 APP_NAME = "cf-api"
 JWT_SECRET="long-life-bytheg-project-123456789"
+ACCESS_TOKEN_EXPIRY = 300  # 5 * 60 ( 5 min en seg.)
+REFRESH_TOKEN_EXPIRY = 1382000  # 16 * 24 * 60 * 60 (16 dias en seg.)
 
 [[d1_databases]]
 binding = "DB"

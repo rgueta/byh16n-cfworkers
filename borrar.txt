@@ -1,3 +1,13 @@
+
+------- Con refresh token  ----------------
+curl -X GET http://192.168.1.179:8787/api/me/1 \
+ -H "Authorization: Bearer  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzcxMTA5OTMzLCJleHAiOjE3NzExMTAyMzN9.tR2QCAnUY1b-2nzCAmjmC0HuD_PJx-NkIkWkvkN3QnQ" \
+ -H "Content-Type: application/json" \
+  -d '{
+  "refreshToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwidHlwZSI6InJlZnJlc2giLCJqdGkiOiI0MDU2NjQwNGU4YTQ5MGUyNzg2NjNlMjE1ZDgyMDYyZCIsImlhdCI6MTc3MTEwMjYyMiwiZXhwIjoxNzcyNDg0NjIyfQ.GHwsbMbvk1DN3bhgCQ3qW-Fao_6kHo8nwasB6Rbmg50"
+}'
+
+--------------------------------------
 curl -X POST http://localhost:8787/api/importar \
    -H "Content-Type: application/json" \
    -d '{
@@ -67,7 +77,7 @@ curl -X POST http://localhost:8787/api/importar \
 
 ------------------------------------------
 
- curl -X POST  https://byh16worker.ricardogueta.workers.dev/api/importar \  ❮  
+ curl -X POST  https://byh16worker.ricardogueta.workers.dev/api/importar \
             -H "Content-Type: application/json" \
             -d '{
         "tabla": "userRoles",
@@ -77,3 +87,19 @@ curl -X POST http://localhost:8787/api/importar \
           "assignedBy":1
          }
        }'
+
+
+curl -X POST http://localhost:8787/api/auth/refresh \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzQwMDAwMDAwLCJleHAiOjE3NDAwMDAxMDB9.ejemploFirmaAuthToken" \
+  -H "X-Refresh-Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwidHlwZSI6InJlZnJlc2giLCJqdGkiOiJhYmNkMTIzNCIsImlhdCI6MTc0MDAwMDAwMCwiZXhwIjoxNzQxMjAwMDAwfQ.ejemploFirmaRefreshToken" \
+  -H "Content-Type: application/json" \
+  -d "{}"
+
+  curl -X POST http://localhost:8787/api/auth/refresh \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzQwMDAwMDAwLCJleHAiOjE3NDAwMDAxMDB9.ejemploFirmaAuthToken" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email":"ricardogueta@gmail.com",
+    "pwd":"1234567",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwidHlwZSI6InJlZnJlc2giLCJqdGkiOiJhYmNkMTIzNCIsImlhdCI6MTc0MDAwMDAwMCwiZXhwIjoxNzQxMjAwMDAwfQ.ejemploFirmaRefreshToken"
+  }'

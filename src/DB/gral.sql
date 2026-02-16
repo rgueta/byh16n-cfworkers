@@ -1,0 +1,159 @@
+-- CREATE TABLE codes (
+--  id INTEGER PRIMARY KEY AUTOINCREMENT,
+--  code TEXT,
+--  userId INTEGER,
+--  visitorId INTEGER,
+--  device_plaform TEXT,
+--  initial TEXT,
+--  expiry TEXT,
+--  enable INTEGER NOT NULL DEFAULT 1 CHECK (enable IN (0,1)),
+--  createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--  updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+--  FOREIGN KEY (visitorId) REFERENCES visitors(id) ON DELETE CASCADE
+--  );
+
+
+-- CREATE TABLE code_events_tmp (
+-- id INTEGER PRIMARY KEY AUTOINCREMENT,
+-- codeId INTEGER,
+-- coreSim TEXT,
+-- doorName TEXT,
+-- picId TEXT,
+-- createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+-- updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+-- FOREIGN KEY (codeId) REFERENCES codes(id) ON DELETE CASCADE
+-- );
+
+-- DROP TABLE code_events;
+
+-- ALTER TABLE code_events_tmp RENAME TO code_events;
+
+-- insert into codes (code, userId, visitorId, device_plaform, initial, expiry, enable)
+--            values ('A688A9', 1, 1, 'Android', '2026-02-09 09:32:43','2026-03-09 19:32:43',1),
+--                   ('3D1087', 1, 1, 'Android', '2026-02-09 09:32:43','2026-03-10 19:32:43',1),
+--                   ('38B52A', 1, 1, 'Android', '2026-02-09 09:32:43','2026-03-11 19:32:43',1);
+
+-------------------
+-- insert into code_events (codeId, coreSim, doorName, picId)
+-- values (1, '+526641752182','Entrada Norte','N/A' ),
+-- (2, '+526641752182','Entrada Norte','N/A' ),
+-- (3, '+526641752182','Entrada Norte','N/A' );
+
+----------------------CPUS  -------------------
+--
+--
+--
+--
+-- CREATE TABLE cpus_tmp
+--  (id INTEGER PRIMARY KEY AUTOINCREMENT,
+--  	name TEXT,
+--  	shortName TEXT,
+--  	sim TEXT,
+--  	entries INTEGER,
+--  	cores INTEGER,
+--  	description TEXT,
+--  	houses INTEGER,
+--  	school INTEGER,
+--  	geoId INTEGER,
+--  	divisionId INTEGER,
+--  	FOREIGN KEY("divisionId") REFERENCES "divisions"("id") ON DELETE CASCADE,
+--  	FOREIGN KEY("geoId") REFERENCES "geolocations"("id") ON DELETE CASCADE);
+
+
+--  insert into cpus_tmp(name, shortName, sim, entries, cores, description, houses, school, geoId, divisionId)
+--  select name, shortName, sim, entries, cores, description, houses, school, geoId, divisionId from cpus;
+--  -- values ('Case grande 3 rec. 1','CG3.1','+526641942241',1,2,'',100,0,3,1 ),
+--  --        ('Case grande','CG','+526641942241',2,20,'',1800,1,2,1 ),
+--  --        ('Case grande 3 rec. 2','CG3.2','+526641942241',1,3,'',230,0,1,1 );
+
+
+-- DROP TABLE cpus;
+
+-- ALTER TABLE cpus_tmp RENAME TO cpus;
+---------------------------------
+--
+-- update codes set expiry = '2026-02-09 19:32:43' where id = 3;
+-- update cores set sim = '+526632032532' where id = 1;
+
+
+--
+-- SELECT
+--     c.id,
+--     c.name,
+--     c.shortName,
+--     c.address,
+--     c.houses,
+--     c.sim,
+--     c.email,
+--     c.enable,
+--     c.remote,
+--     c.code_expire,
+--     c.webService,
+--     c.contact_name,
+--     c.contact_email,
+--     c.contact_cell,
+--     c.description,
+--     co.shortName || '.' || s.shortName || '.' || ci.shortName ||
+--     '.' || d.shortName || '.' || cp.shortName || '.' || c.shortName AS location
+-- FROM cores c
+-- JOIN cpus cp ON cp.id = c.cpuId
+-- JOIN geolocations g ON g.id = c.geoId
+-- JOIN divisions d ON d.id = cp.divisionId
+-- JOIN cities ci ON ci.id = d.cityId
+-- JOIN states s ON s.id = ci.stateId
+-- JOIN countries co ON co.id = ci.countryId
+
+-- cores:
+--┌────┬───────────────────┬───────────┬────────────────────────┬────────┬───────────────┬────────────────────────┬────────┬────────┬─────────────┬────────────┬──────────────┬────────────────────────┬───────────────┬─────────────┬───────┬───────┐
+--│ id │ name              │ shortName │ address                │ houses │ sim           │ email                  │ enable │ remote │ code_expire │ webService │ contact_name │ contact_email          │ contact_cell  │ description │ cpuId │ geoId │
+--├────┼───────────────────┼───────────┼────────────────────────┼────────┼───────────────┼────────────────────────┼────────┼────────┼─────────────┼────────────┼──────────────┼────────────────────────┼───────────────┼─────────────┼───────┼───────┤
+--│ 1  │ San Juan          │ SJ        │ Hda. San Juan 10125    │ 20     │ +526632032532 │ ricardogueta@gmail.com │ 1      │ 1      │ 1           │ 1          │              │                        │               │ null        │ 2     │ 4     │
+--├────┼───────────────────┼───────────┼────────────────────────┼────────┼───────────────┼────────────────────────┼────────┼────────┼─────────────┼────────────┼──────────────┼────────────────────────┼───────────────┼─────────────┼───────┼───────┤
+--│ 2  │ Casa Grande comun │ CGC       │ Hda. Casa grande       │ 20     │ +526632032532 │ ricardogueta@gmail.com │ 1      │ 1      │ 1           │ 1          │              │ ricardogueta@gmail.com │ +526641752182 │ null        │ 2     │ 2     │
+--├────┼───────────────────┼───────────┼────────────────────────┼────────┼───────────────┼────────────────────────┼────────┼────────┼─────────────┼────────────┼──────────────┼────────────────────────┼───────────────┼─────────────┼───────┼───────┤
+--│ 3  │ San Gabriel       │ SG        │ Hda. San Gabriel 10126 │ 20     │ +526632032532 │ ricardogueta@gmail.com │ 1      │ 1      │ 1           │ 1          │              │ ricardogueta@gmail.com │ +526641752182 │ null        │ 2     │ 5     │
+--└────┴───────────────────┴───────────┴────────────────────────┴────────┴───────────────┴────────────────────────┴────────┴────────┴─────────────┴────────────┴──────────────┴────────────────────────┴───────────────┴─────────────┴───────┴───────┘
+
+--------- insert into cores  ----------------------
+-- insert into cores(name,shortName,address,houses,sim,email,enable,remote,code_expire,webService,contact_name,contact_email,contact_cell,description,cpuId,geoId)
+--       values("San Gabriel","SG","Hda. San Gabriel",20,"+526632032532","ricardogueta@gmail.com",1,1,1,1,"","ricardogueta@gmail.com","+526641752182","",2,5);
+
+---------- insert into cpus ----------------
+-- insert into cpus(name, shortName, sim, entries, cores, description, houses, school, geoId, divisionId)
+-- values('Case grande 3 rec. 2','CG3.2','+526641942241',1,3,'',230,0,1,1 );
+
+---------  resquence  -------------
+-- update sqlite_sequence set seq=0 where name = 'users';
+
+--------  clean users  ---------------
+-- delete from users;
+
+----------- insert into users ------------
+-- insert into users (email, username, pwd, name, house, sim,
+-- gender, avatar, coreId, location, locked, uuid, blocked)
+-- values('ricardogueta@gmail.com','rgueta', '', 'Ricardo Gueta','14',
+-- '+526641752182','M', '',1, 'MX.BC.TJ.6.CG.SJ',0,'b8f7c9908aa28584',0)
+
+----------- insert into userRoles ------------
+-- insert into userRoles(userId, roleId, assignedBy, expiresAt)
+-- values (1, 3, 1, '');
+--
+-------------  Query user,roles  ----------------
+-- SELECT
+-- u.id,
+-- GROUP_CONCAT(r.name, ', ') as role,
+-- COUNT(r.id) as qtyRoles
+-- FROM users u
+-- LEFT JOIN userRoles ur ON u.id = ur.userId
+-- LEFT JOIN roles r ON ur.roleId = r.id
+-- WHERE u.id = 1 AND locked = 0
+-- GROUP BY u.id, u.username, u.email
+
+-- Ext: Feb 14 15:03:53
+"authToken":
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzcxMTA5OTMzLCJleHAiOjE3NzExMTAyMzN9.tR2QCAnUY1b-2nzCAmjmC0HuD_PJx-NkIkWkvkN3QnQ
+
+-- Ext: Mar 02 12:50:22
+"refreshToken":
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwidHlwZSI6InJlZnJlc2giLCJqdGkiOiJkOTI2ODZmYjdmNzQwNTI4NjY2NDY2OGVmNjdlZGE1ZCIsImlhdCI6MTc3MTE4NDY1MCwiZXhwIjoxNzcyNTY2NjUwfQ.qfguIM0o2wH1WFptvqzrmRFgzUiWt7irxs4lUGeECiE
