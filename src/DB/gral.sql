@@ -40,10 +40,10 @@
 --                   ('38B52A', 1, 'Android', '2026-02-09 09:32:43','2026-03-11 19:32:43',1);
 
 -------------------
-insert into code_events (codeId, coreSim, doorName, picId)
-values (1, '+526641752182','Entrada Norte','N/A' ),
-(2, '+526641752182','Entrada Norte','N/A' ),
-(3, '+526641752182','Entrada Norte','N/A' );
+-- insert into code_events (codeId, coreSim, doorName, picId)
+-- values (1, '+526641752182','Entrada Norte','N/A' ),
+-- (2, '+526641752182','Entrada Norte','N/A' ),
+-- (3, '+526641752182','Entrada Norte','N/A' );
 
 ----------------------CPUS  -------------------
 --
@@ -155,7 +155,11 @@ values (1, '+526641752182','Entrada Norte','N/A' ),
 -- WHERE u.id = 1 AND locked = 0
 -- GROUP BY u.id, u.username, u.email
 --
---
+SELECT ce.*,c.code,u.house FROM code_events ce
+LEFT JOIN codes c ON c.id = ce.codeId
+LEFT JOIN users u ON u.id = c.userId
+WHERE ce.createdAt BETWEEN '2026-02-01 00:48:00' AND '2026-02-18 23:59:59'
+ORDER BY createdAt DESC
 --
 
 -- Ext: Feb 14 15:03:53

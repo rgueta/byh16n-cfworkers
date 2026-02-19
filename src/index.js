@@ -11,14 +11,12 @@ import { hashPwd, verifyPwd, sha256 } from "./auth/pwd.js";
 
 import { verifyToken, verifyRole } from "./auth/auth.js";
 import { auth as authRoutes } from "./routes/auth.js";
-// import { autoRefresh } from "./auth/autoRefresh.js";
 
 //-------- DB ----------
 
 const app = new Hono();
 app.use("*", corsMiddleware);
 app.options("*", (c) => c.text("", 204));
-// app.use("/api/*", autoRefresh(app));
 
 // app.post("/signin", async (c) => {
 //   const { email, pwd } = await c.req.json();

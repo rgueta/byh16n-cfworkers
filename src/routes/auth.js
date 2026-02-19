@@ -2,8 +2,6 @@ import { Hono } from "hono";
 import { sign, verify } from "hono/jwt";
 import { verifyPwd, sha256 } from "../auth/pwd.js";
 import { createAccessToken, createRefreshToken } from "../auth/tokens.js";
-import { autoRefresh } from "../auth/autoRefresh.js";
-import { verifyToken as verifyJwt } from "../auth/auth.js";
 
 export const auth = new Hono();
 // Valores por defecto desde environment
@@ -124,6 +122,7 @@ auth.post("/refresh", async (c) => {
   const hash = await sha256(refreshToken);
 
   const refreshData = await c.env.REFRESH_KV.get(`refresh:${hash}`);
+  console.log("refreshData: ", refreshData);
 
   if (!refreshToken) {
     return c.json({ error: "No refresh token" }, 401);
@@ -173,8 +172,6 @@ auth.post("/refresh", async (c) => {
 
   const key = `refresh:${payload.sub}`;
   const stored = await c.env.REFRESH_KV.get(`refresh:${hash}`, "json");
-
-  // const stored = await autoRefresh(c.env, payload.sub);
 
   if (!stored) {
     return c.json({ error: "Refresh token revoked" }, 403);
