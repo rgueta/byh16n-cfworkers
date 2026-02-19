@@ -120,10 +120,9 @@ auth.post("/signin", async (c) => {
 
 auth.post("/refresh", async (c) => {
   const defaults = getDefaults(c);
-
   const { refreshToken } = await c.req.json();
-
   const hash = await sha256(refreshToken);
+
   const refreshData = await c.env.REFRESH_KV.get(`refresh:${hash}`);
 
   if (!refreshToken) {
@@ -181,158 +180,32 @@ auth.post("/refresh", async (c) => {
     return c.json({ error: "Refresh token revoked" }, 403);
   }
 
+  let iatDate = Math.floor(Date.now() / 1000);
+  let expDate = Math.floor(Date.now() / 1000) + defaults.accessTokenExpiry;
+
   const newAccessToken = await sign(
     {
       sub: String(user.id),
       role: primaryRole || "",
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + defaults.accessTokenExpiry,
+      iat: iatDate,
+      exp: expDate,
     },
     c.env.JWT_SECRET,
     "HS256",
   );
 
-  console.log("newAccessToken: ", newAccessToken);
-
-  return c.json({ accessToken: newAccessToken });
-});
-
-auth.post("/refresh__", async (c, next) => {
-  console.log("Estoy en auto refresh...");
-
-  const authHeader = c.req.header("Authorization");
-  const refreshToken = c.req.header("X-Refresh-Token");
-
-  // Si hay token de autorización y refresh token
-  if (authHeader?.startsWith("Bearer ") && refreshToken) {
-    const token = authHeader.split(" ")[1];
-
-    try {
-      // Verificar si el token está expirado
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      const now = Math.floor(Date.now() / 1000);
-
-      // Si el token está expirado
-      if (payload.exp < now) {
-        console.log("Token expirado, intentando refrescar...");
-
-        // Intentar refrescar el token
-        const refreshResponse = await fetch(
-          new URL("/api/auth/refresh", c.req.url),
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: authHeader,
-            },
-            body: JSON.stringify({ refreshToken }),
-          },
-        );
-
-        if (refreshResponse.ok) {
-          const { accessToken } = await refreshResponse.json();
-          console.log("Token refrescado exitosamente");
-
-          // Actualizar el header con el nuevo token
-          c.req.headers.set("Authorization", `Bearer ${accessToken}`);
-
-          // Continuar con la petición original pero con el nuevo token
-          const response = await next();
-
-          // Agregar el nuevo token a la respuesta
-          const newResponse = new Response(response.body, response);
-          newResponse.headers.set("X-New-Access-Token", accessToken);
-          return newResponse;
-        } else {
-          console.log("Error al refrescar token");
-          return c.json(
-            {
-              error: "Token expired and refresh failed",
-              code: "REFRESH_FAILED",
-            },
-            401,
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Error en autoRefresh:", error);
-    }
-  }
-
-  // Si no hay problemas, continuar normalmente
-  return next();
+  return c.json(
+    {
+      success: true,
+      authToken: newAccessToken,
+      iatDate: new Date(iatDate * 1000).toLocaleString(),
+      expDate: new Date(expDate * 1000).toLocaleString(),
+    },
+    200,
+  );
 });
 
 const decodeJwt = (token) => {
   const [, payload] = token.split(".");
   return JSON.parse(atob(payload));
 };
-
-auth.post("/refresh_", async (c) => {
-  const { refreshToken } = await c.req.json();
-  if (!refreshToken) {
-    return c.json({ error: "No refresh token" }, 400);
-  }
-
-  const hash = await sha256(refreshToken);
-  const refreshData = await c.env.REFRESH_KV.get(`refresh:${hash}`);
-
-  if (!refreshData) {
-    return c.json({ error: "Invalid refresh token" }, 401);
-  }
-
-  // Parsear los datos guardados
-  const { userId } = JSON.parse(refreshData);
-
-  const user = await c.env.DB.prepare(
-    `
-      SELECT
-      u.id,
-      json_group_array(
-             json_object(
-                 'id', r.id,
-                 'name', r.name,
-                 'shortName', r.shortName,
-                 'level', r.level
-              )
-         ) as roles,
-      COUNT(r.id) as qtyRoles
-      FROM users u
-      LEFT JOIN userRoles ur ON u.id = ur.userId
-      LEFT JOIN roles r ON ur.roleId = r.id
-      WHERE u.id = ? AND locked = 0
-      GROUP BY u.id, u.username, u.email
-      `,
-  )
-    .bind(userId)
-    .first();
-
-  const jsonRoles = user.roles ? JSON.parse(user.roles) : [];
-  const primaryRole = jsonRoles.length > 0 ? jsonRoles[0].name : "";
-  // Crear objeto user con el rol
-  const userForToken = {
-    id: user.id,
-    role: primaryRole,
-    ...user,
-  };
-
-  if (!user) {
-    return c.json({ error: "User not found" }, 401);
-  }
-
-  // const newAccessToken = await createAccessToken(user, c.env.JWT_SECRET);
-  const newAccessToken = await createAccessToken(c, userForToken);
-  console.log("newAccessToken: ", newAccessToken);
-
-  return c.json({ accessToken: newAccessToken });
-});
-
-auth.post("/logout", async (c) => {
-  const { refreshToken } = await c.req.json();
-  if (!refreshToken) return c.json({ ok: true });
-
-  const hash = await sha256(refreshToken);
-  await c.env.REFRESH_KV.delete(`refresh:${hash}`);
-
-  return c.json({ ok: true });
-});

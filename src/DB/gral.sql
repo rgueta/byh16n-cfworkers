@@ -1,18 +1,23 @@
--- CREATE TABLE codes (
+-- CREATE TABLE codes_tmp (
 --  id INTEGER PRIMARY KEY AUTOINCREMENT,
 --  code TEXT,
 --  userId INTEGER,
---  visitorId INTEGER,
 --  device_plaform TEXT,
 --  initial TEXT,
 --  expiry TEXT,
 --  enable INTEGER NOT NULL DEFAULT 1 CHECK (enable IN (0,1)),
 --  createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 --  updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
---  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
---  FOREIGN KEY (visitorId) REFERENCES visitors(id) ON DELETE CASCADE
+--  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
 --  );
 
+
+-- insert into codes_tmp (code, userId, device_plaform, initial, expiry, enable, createdAt, updatedAt )
+-- select code, userId, device_plaform, initial, expiry, enable, createdAt, updatedAt  from codes;
+
+-- DROP TABLE codes;
+
+-- ALTER TABLE codes_tmp RENAME TO codes;
 
 -- CREATE TABLE code_events_tmp (
 -- id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,16 +34,16 @@
 
 -- ALTER TABLE code_events_tmp RENAME TO code_events;
 
--- insert into codes (code, userId, visitorId, device_plaform, initial, expiry, enable)
---            values ('A688A9', 1, 1, 'Android', '2026-02-09 09:32:43','2026-03-09 19:32:43',1),
---                   ('3D1087', 1, 1, 'Android', '2026-02-09 09:32:43','2026-03-10 19:32:43',1),
---                   ('38B52A', 1, 1, 'Android', '2026-02-09 09:32:43','2026-03-11 19:32:43',1);
+-- insert into codes (code, userId, device_plaform, initial, expiry, enable)
+--            values ('A688A9', 1, 'Android', '2026-02-09 09:32:43','2026-03-09 19:32:43',1),
+--                   ('3D1087', 1, 'Android', '2026-02-09 09:32:43','2026-03-10 19:32:43',1),
+--                   ('38B52A', 1, 'Android', '2026-02-09 09:32:43','2026-03-11 19:32:43',1);
 
 -------------------
--- insert into code_events (codeId, coreSim, doorName, picId)
--- values (1, '+526641752182','Entrada Norte','N/A' ),
--- (2, '+526641752182','Entrada Norte','N/A' ),
--- (3, '+526641752182','Entrada Norte','N/A' );
+insert into code_events (codeId, coreSim, doorName, picId)
+values (1, '+526641752182','Entrada Norte','N/A' ),
+(2, '+526641752182','Entrada Norte','N/A' ),
+(3, '+526641752182','Entrada Norte','N/A' );
 
 ----------------------CPUS  -------------------
 --
@@ -149,11 +154,14 @@
 -- LEFT JOIN roles r ON ur.roleId = r.id
 -- WHERE u.id = 1 AND locked = 0
 -- GROUP BY u.id, u.username, u.email
+--
+--
+--
 
 -- Ext: Feb 14 15:03:53
-"authToken":
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzcxMTA5OTMzLCJleHAiOjE3NzExMTAyMzN9.tR2QCAnUY1b-2nzCAmjmC0HuD_PJx-NkIkWkvkN3QnQ
+--"authToken":
+--eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzcxMTA5OTMzLCJleHAiOjE3NzExMTAyMzN9.tR2QCAnUY1b-2nzCAmjmC0HuD_PJx-NkIkWkvkN3QnQ
 
 -- Ext: Mar 02 12:50:22
-"refreshToken":
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwidHlwZSI6InJlZnJlc2giLCJqdGkiOiJkOTI2ODZmYjdmNzQwNTI4NjY2NDY2OGVmNjdlZGE1ZCIsImlhdCI6MTc3MTE4NDY1MCwiZXhwIjoxNzcyNTY2NjUwfQ.qfguIM0o2wH1WFptvqzrmRFgzUiWt7irxs4lUGeECiE
+--"refreshToken":
+--eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwidHlwZSI6InJlZnJlc2giLCJqdGkiOiJkOTI2ODZmYjdmNzQwNTI4NjY2NDY2OGVmNjdlZGE1ZCIsImlhdCI6MTc3MTE4NDY1MCwiZXhwIjoxNzcyNTY2NjUwfQ.qfguIM0o2wH1WFptvqzrmRFgzUiWt7irxs4lUGeECiE

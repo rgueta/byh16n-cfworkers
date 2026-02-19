@@ -3,6 +3,7 @@ import { verify } from "hono/jwt";
 export const verifyToken = () => {
   return async (c, next) => {
     const authHeader = c.req.header("Authorization");
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return c.json({ error: "No token provided" }, 401);
     }
@@ -20,6 +21,7 @@ export const verifyToken = () => {
     } catch (error) {
       // Si el token expiró, devolver 401 específico
       if (error.message.includes("expired")) {
+        console.log("El accessToken expiro...");
         return c.json({ error: "Token expired", code: "TOKEN_EXPIRED" }, 401);
       }
       return c.json({ error: "Invalid token" }, 401);

@@ -258,11 +258,22 @@ app.post("/api/show", async (c) => {
 
 app.get("/", (c) => c.text("OK"));
 
+app.post("/api/logout", async (c) => {
+  const { refreshToken } = await c.req.json();
+  if (!refreshToken) return c.json({ ok: true });
+
+  const hash = await sha256(refreshToken);
+  await c.env.REFRESH_KV.delete(`refresh:${hash}`);
+
+  return c.json({ ok: true });
+});
+
 app.route("/api/auth", authRoutes);
 app.route("/api/users", usersRoutes);
 app.route("/api/importar", importarRoutes);
 app.route("/api/codeEvent", codeEventsRoutes);
 app.route("/api/cores", coresRoutes);
+app.route("/api/codes", codeRoutes);
 
 app.get("/api/env", (c) => {
   return c.json({

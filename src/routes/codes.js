@@ -17,12 +17,9 @@ codeRoutes.get("/user/:userId", async (c) => {
         u.id AS userId,
         u.username,
         u.email,
-        u.avatar,
-        v.sim as visitorSim,
-        v.name as visitorName
+        u.avatar
       FROM codes c
       LEFT JOIN users u ON c.userId = u.id
-      LEFT JOIN visitors v ON v.id = c.visitorId
       WHERE u.id = ?
       ORDER BY c.expiry DESC
       LIMIT 20;
