@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { sign, verify } from "hono/jwt";
-import { verifyPwd, sha256 } from "../auth/pwd.js";
+import { verifyPwd, sha256, randomToken } from "../auth/pwd.js";
 import { createAccessToken, createRefreshToken } from "../auth/tokens.js";
 
 export const auth = new Hono();
@@ -8,10 +8,13 @@ export const auth = new Hono();
 const getDefaults = (c) => ({
   accessTokenExpiry: parseInt(c.env.ACCESS_TOKEN_EXPIRY) || 2 * 60,
   refreshTokenExpiry: parseInt(c.env.REFRESH_TOKEN_EXPIRY) || 14 * 24 * 60 * 60,
+  refreshTokenLimit: parseInt(c.env.REFRESH_TOKEN_LIMIT) || 5,
 });
 
+// En tu endpoint de login
+
 auth.post("/signin", async (c) => {
-  const { email, pwd } = await c.req.json();
+  const { email, pwd, deviceId } = await c.req.json();
 
   const user = await c.env.DB.prepare(
     `
@@ -86,7 +89,13 @@ auth.post("/signin", async (c) => {
   };
 
   const accessToken = await createAccessToken(c, userForToken);
-  const refreshToken = await createRefreshToken(c, user.id, primaryRole);
+
+  const refreshToken = await createRefreshToken(
+    c,
+    user.id,
+    primaryRole,
+    deviceId,
+  );
   const decode = decodeJwt(accessToken);
 
   // Fechas CORRECTAS
@@ -119,87 +128,371 @@ auth.post("/signin", async (c) => {
 auth.post("/refresh", async (c) => {
   const defaults = getDefaults(c);
   const { refreshToken } = await c.req.json();
-  const hash = await sha256(refreshToken);
-
-  const refreshData = await c.env.REFRESH_KV.get(`refresh:${hash}`);
-  console.log("refreshData: ", refreshData);
 
   if (!refreshToken) {
     return c.json({ error: "No refresh token" }, 401);
   }
 
-  // Parsear los datos guardados
-  const { userId } = JSON.parse(refreshData);
+  try {
+    // 1. Verificar el token primero
+    const payload = await verify(
+      refreshToken.trim(),
+      c.env.JWT_SECRET,
+      "HS256",
+    );
+    console.log("payload:", payload);
 
-  const user = await c.env.DB.prepare(
-    `
+    // 2. Construir la clave según TU formato: refresh:${userId}:${deviceId}
+    const key = `refresh:${payload.sub}:${payload.deviceId}`;
+    console.log("🔑 Buscando clave en KV:", key);
+
+    // 3. Buscar en KV usando la clave construida
+    const refreshData = await c.env.REFRESH_KV.get(key);
+    console.log("📦 refreshData desde KV:", refreshData);
+
+    if (!refreshData) {
+      return c.json(
+        {
+          error: "Refresh token not found",
+          detail: "El token no existe en KV",
+          key: key,
+        },
+        403,
+      );
+    }
+
+    // 4. Parsear los datos guardados
+    const tokenData = JSON.parse(refreshData);
+    console.log("📊 tokenData:", tokenData);
+
+    // 5. Calcular el hash del token recibido para comparar
+    const receivedHash = await sha256(refreshToken);
+    console.log("🔐 Hash recibido:", receivedHash);
+    console.log("🔐 Hash guardado:", tokenData.hash);
+
+    // 6. Verificar que el hash coincida
+    if (receivedHash !== tokenData.hash) {
+      return c.json({ error: "Token hash mismatch" }, 403);
+    }
+
+    // 7. Verificar expiración
+    const now = Math.floor(Date.now() / 1000);
+    console.log("⏰ Tiempo actual:", now);
+    console.log("⏰ Expira en:", tokenData.expiresAt);
+
+    if (tokenData.expiresAt < now) {
+      // Eliminar token expirado
+      await c.env.REFRESH_KV.delete(key);
+      return c.json({ error: "Refresh token expired" }, 403);
+    }
+
+    // 8. Obtener datos actualizados del usuario
+    const user = await c.env.DB.prepare(
+      `
       SELECT
-      u.id,
-      json_group_array(
-             json_object(
-                 'id', r.id,
-                 'name', r.name,
-                 'shortName', r.shortName,
-                 'level', r.level
-              )
-         ) as roles,
-      COUNT(r.id) as qtyRoles
+        u.id,
+        u.username,
+        u.email,
+        u.locked,
+        json_group_array(
+          json_object(
+            'id', r.id,
+            'name', r.name,
+            'shortName', r.shortName,
+            'level', r.level
+          )
+        ) as roles
       FROM users u
       LEFT JOIN userRoles ur ON u.id = ur.userId
       LEFT JOIN roles r ON ur.roleId = r.id
-      WHERE u.id = ? AND locked = 0
-      GROUP BY u.id, u.username, u.email
-      `,
-  )
-    .bind(userId)
-    .first();
+      WHERE u.id = ? AND u.locked = 0
+      GROUP BY u.id
+    `,
+    )
+      .bind(payload.sub)
+      .first();
 
-  let payload;
-  const jsonRoles = user.roles ? JSON.parse(user.roles) : [];
-  const primaryRole = jsonRoles.length > 0 ? jsonRoles[0].name : "";
-  // Crear objeto user con el rol
-  const userForToken = {
-    id: user.id,
-    role: primaryRole,
-    ...user,
-  };
+    if (!user) {
+      return c.json({ error: "User not found or locked" }, 403);
+    }
 
-  try {
-    payload = await verify(refreshToken.trim(), c.env.JWT_SECRET, "HS256");
-  } catch (err) {
-    return c.json({ msg: "Invalid refresh token", error: err }, 403);
-  }
+    const jsonRoles = user.roles ? JSON.parse(user.roles) : [];
+    const primaryRole = jsonRoles.length > 0 ? jsonRoles[0].name : "";
 
-  const key = `refresh:${payload.sub}`;
-  const stored = await c.env.REFRESH_KV.get(`refresh:${hash}`, "json");
+    // 9. Verificar si debemos rotar el refresh token
+    const timeToExpiry = payload.exp - now;
+    const shouldRotate = timeToExpiry <= defaults.refreshTokenLimit;
+    console.log(
+      "🔄 ¿Rotar token?",
+      shouldRotate,
+      "Tiempo restante:",
+      timeToExpiry,
+    );
 
-  if (!stored) {
-    return c.json({ error: "Refresh token revoked" }, 403);
-  }
+    // 10. Generar nuevo access token
+    const iatDate = now;
+    const expDate = iatDate + defaults.accessTokenExpiry;
 
-  let iatDate = Math.floor(Date.now() / 1000);
-  let expDate = Math.floor(Date.now() / 1000) + defaults.accessTokenExpiry;
+    const newAccessToken = await sign(
+      {
+        sub: String(user.id),
+        role: primaryRole,
+        deviceId: payload.deviceId,
+        iat: iatDate,
+        exp: expDate,
+      },
+      c.env.JWT_SECRET,
+      "HS256",
+    );
 
-  const newAccessToken = await sign(
-    {
-      sub: String(user.id),
-      role: primaryRole || "",
-      iat: iatDate,
-      exp: expDate,
-    },
-    c.env.JWT_SECRET,
-    "HS256",
-  );
-
-  return c.json(
-    {
+    let newRefreshToken = null;
+    let responseData = {
       success: true,
       authToken: newAccessToken,
-      iatDate: new Date(iatDate * 1000).toLocaleString(),
-      expDate: new Date(expDate * 1000).toLocaleString(),
-    },
-    200,
-  );
+      iatDate: new Date(iatDate * 1000).toISOString(),
+      expDate: new Date(expDate * 1000).toISOString(),
+    };
+
+    // 11. Rotar refresh token si es necesario
+    if (shouldRotate) {
+      const newExpiry = iatDate + defaults.refreshTokenExpiry;
+
+      // Generar nuevo refresh token
+      newRefreshToken = await sign(
+        {
+          sub: String(user.id),
+          role: primaryRole,
+          type: "refresh",
+          jti: crypto.randomUUID(),
+          deviceId: payload.deviceId,
+          iat: iatDate,
+          exp: newExpiry,
+        },
+        c.env.JWT_SECRET,
+        "HS256",
+      );
+
+      // Hashear el nuevo token
+      const newHash = await sha256(newRefreshToken);
+
+      // Guardar nuevo refresh token con TU formato
+      const newKey = `refresh:${user.id}:${payload.deviceId}`;
+      await c.env.REFRESH_KV.put(
+        newKey,
+        JSON.stringify({
+          hash: newHash,
+          userId: String(user.id),
+          role: primaryRole,
+          deviceId: payload.deviceId,
+          issuedAt: Date.now(),
+          expiresAt: newExpiry,
+        }),
+        { expirationTtl: defaults.refreshTokenExpiry },
+      );
+
+      // Opcional: Eliminar el refresh token usado
+      // await c.env.REFRESH_KV.delete(key);
+
+      responseData.refreshToken = newRefreshToken;
+      console.log("✅ Nuevo refresh token generado");
+    } else {
+      console.log("✅ Usando mismo refresh token");
+    }
+
+    return c.json(responseData, 200);
+  } catch (err) {
+    console.error("❌ Error en refresh:", err);
+    return c.json(
+      {
+        error: "Invalid refresh token",
+        message: err instanceof Error ? err.message : "Unknown error",
+      },
+      403,
+    );
+  }
+});
+
+auth.get("/debug/token/:userId/:deviceId", async (c) => {
+  const userId = c.req.param("userId");
+  const deviceId = c.req.param("deviceId");
+
+  const key = `refresh:${userId}:${deviceId}`;
+  const data = await c.env.REFRESH_KV.get(key);
+
+  if (!data) {
+    return c.json({ error: "Token no encontrado" }, 404);
+  }
+
+  const tokenData = JSON.parse(data);
+  const now = Math.floor(Date.now() / 1000);
+
+  return c.json({
+    key: key,
+    data: tokenData,
+    expired: tokenData.expiresAt < now,
+    timeRemaining: tokenData.expiresAt - now,
+    exists: true,
+  });
+});
+
+auth.get("/debug/user/:userId", async (c) => {
+  const userId = c.req.param("userId");
+
+  const keys = await c.env.REFRESH_KV.list({ prefix: `refresh:${userId}:` });
+  const tokens = [];
+
+  for (const key of keys.keys) {
+    const value = await c.env.REFRESH_KV.get(key.name);
+    if (value) {
+      tokens.push({
+        key: key.name,
+        value: JSON.parse(value),
+        expiration: key.expiration,
+      });
+    }
+  }
+
+  return c.json({
+    userId: userId,
+    totalTokens: tokens.length,
+    tokens: tokens,
+  });
+});
+
+auth.get("/kv-info", async (c) => {
+  // Endpoint para debug - AÑADE ESTO TEMPORALMENTE
+
+  try {
+    // 1. Listar todas las keys con prefix refresh:
+    const listResult = await c.env.REFRESH_KV.list({
+      prefix: "refresh:",
+      limit: 1000,
+    });
+
+    // console.log("listResult: ", listResult);
+
+    // 2. Si hay keys, obtener una muestra
+    const samples = [];
+    let count = 0;
+    for (const key of listResult.keys.slice(0, 4)) {
+      // for (const key of listResult.keys) {
+      count++;
+      const value = await c.env.REFRESH_KV.get(key.name, "json");
+      samples.push({
+        key: key.name,
+        expiration: key.expiration,
+        expiration_date: new Date(key.expiration * 1000).toISOString(),
+        value: value,
+      });
+    }
+
+    console.log("Total:", count);
+    console.log(samples);
+
+    return c.json(
+      {
+        success: true,
+      },
+      200,
+    );
+
+    //   // 3. Probar escribir y leer una key de prueba
+    //   const testKey = `refresh:test:${Date.now()}`;
+    //   await c.env.REFRESH_KV.put(testKey, JSON.stringify({ test: true }), {
+    //     expirationTtl: 60, // 60 segundos
+    //   });
+    //   const testRead = await c.env.REFRESH_KV.get(testKey);
+
+    //   return c.json({
+    //     success: true,
+    //     timestamp: Date.now(),
+    //     kv_binding_exists: !!c.env.REFRESH_KV,
+    //     list_keys_count: listResult.keys.length,
+    //     list_complete: listResult.list_complete,
+    //     samples: samples,
+    //     test_write_read: {
+    //       key: testKey,
+    //       written: true,
+    //       read: testRead ? JSON.parse(testRead) : null,
+    //     },
+    //   });
+    //
+  } catch (err) {
+    return c.json(
+      {
+        success: false,
+        error: err.message,
+        stack: err.stack,
+      },
+      500,
+    );
+  }
+});
+
+auth.get("/kv-clean", async (c) => {
+  try {
+    // Autenticación simple (cambia esto por algo más seguro en producción)
+    // const auth = c.req.header("Authorization");
+    // if (auth !== "Bearer tu-clave-secreta-temporal") {
+    //   return c.json({ error: "No autorizado" }, 401);
+    // }
+
+    let cursor = undefined;
+    let deleted = 0;
+    let failed = 0;
+    const startTime = Date.now();
+
+    do {
+      // Listar keys con prefix "refresh:"
+      const list = await c.env.REFRESH_KV.list({
+        prefix: "refresh:",
+        limit: 1000,
+        cursor,
+      });
+
+      console.log(`Procesando lote de ${list.keys.length} keys...`);
+
+      // Eliminar cada key
+      for (const key of list.keys) {
+        try {
+          await c.env.REFRESH_KV.delete(key.name);
+          deleted++;
+
+          // Mostrar progreso cada 10 keys
+          if (deleted % 10 === 0) {
+            console.log(`Eliminadas ${deleted} keys...`);
+          }
+        } catch (err) {
+          failed++;
+          console.error(`Error eliminando ${key.name}:`, err);
+        }
+      }
+
+      cursor = list.cursor;
+    } while (cursor);
+
+    const duration = (Date.now() - startTime) / 1000;
+
+    return c.json({
+      success: true,
+      message: "Limpieza completada",
+      stats: {
+        deleted,
+        failed,
+        total_processed: deleted + failed,
+        duration_seconds: duration,
+      },
+    });
+  } catch (err) {
+    return c.json(
+      {
+        success: false,
+        error: err.message,
+        stack: err.stack,
+      },
+      500,
+    );
+  }
 });
 
 const decodeJwt = (token) => {
