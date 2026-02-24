@@ -1,0 +1,15 @@
+{
+  "_id": {"$oid": "60c53a453371034c5ac6637c"},
+  "email": "ricardogueta@gmail.com",
+  "username": "rgueta",
+  "name": "Ricardo Gueta",
+  "house": 14,
+  "sim": "6641752182",
+  "gender": "M",
+  "core": {"$oid": "625c1d28cc5e1b626205064f"},
+  "location": "MX.BC.TJ.6.CG.SJ",
+  "locked": false,
+  "uuid": "b8f7c9908aa28584",
+  "roles": ["admin","neighborAdmin"],
+  "coreSim": "6632032532"
+}

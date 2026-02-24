@@ -5,11 +5,12 @@ import usersRoutes from "./routes/users.js";
 import codeEventsRoutes from "./routes/codeEvents.js";
 import codeRoutes from "./routes/codes.js";
 import coresRoutes from "./routes/cores.js";
+import roleRoutes from "./routes/roles.js";
 
 // ----  JWT  -----
 import { hashPwd, verifyPwd, sha256 } from "./auth/pwd.js";
 
-import { verifyToken, verifyRole } from "./auth/auth.js";
+import { verifyToken, verifyRoleLevel } from "./auth/auth.js";
 import { auth as authRoutes } from "./routes/auth.js";
 
 //-------- DB ----------
@@ -166,7 +167,7 @@ app.get("/api/config", async (c) => {
 app.get(
   "/api/me/:userId",
   verifyToken(),
-  verifyRole(["admin", "neighborAdmin"]),
+  verifyRoleLevel("neighborAdmin"),
   async (c) => {
     const userId = c.req.param("userId");
     const user = await c.env.DB.prepare(
@@ -272,6 +273,7 @@ app.route("/api/importar", importarRoutes);
 app.route("/api/codeEvent", codeEventsRoutes);
 app.route("/api/cores", coresRoutes);
 app.route("/api/codes", codeRoutes);
+app.route("/api/roles", roleRoutes);
 
 app.get("/api/env", (c) => {
   return c.json({

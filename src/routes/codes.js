@@ -1,12 +1,17 @@
 import { Hono } from "hono";
+import { verifyToken, verifyRoleLevel } from "../auth/auth.js";
 
 const codeRoutes = new Hono();
 
-codeRoutes.get("/user/:userId", async (c) => {
-  const userId = c.req.param("userId");
-  try {
-    const data = await c.env.DB.prepare(
-      `
+codeRoutes.get(
+  "/user/:userId",
+  verifyToken(),
+  verifyRoleLevel("neighbor"),
+  async (c) => {
+    const userId = c.req.param("userId");
+    try {
+      const data = await c.env.DB.prepare(
+        `
         SELECT
         c.id,
         c.code,
@@ -24,19 +29,20 @@ codeRoutes.get("/user/:userId", async (c) => {
       ORDER BY c.expiry DESC
       LIMIT 20;
       `,
-    )
-      .bind(userId)
-      .all();
+      )
+        .bind(userId)
+        .all();
 
-    if (!data) {
-      return c.json({ error: "codigos no encontrados" }, 401);
+      if (!data) {
+        return c.json({ error: "codigos no encontrados" }, 401);
+      }
+
+      return c.json(data || {}, 200);
+    } catch (err) {
+      return c.json({ msg: err }, 404);
     }
-
-    return c.json(data || {}, 200);
-  } catch (err) {
-    return c.json({ msg: err }, 404);
-  }
-});
+  },
+);
 
 codeRoutes.put("/update/:userId/:codeId", async (c) => {
   const body = await c.req.json();

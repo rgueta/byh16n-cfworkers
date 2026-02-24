@@ -167,8 +167,6 @@ auth.post("/refresh", async (c) => {
 
     // 5. Calcular el hash del token recibido para comparar
     const receivedHash = await sha256(refreshToken);
-    console.log("🔐 Hash recibido:", receivedHash);
-    console.log("🔐 Hash guardado:", tokenData.hash);
 
     // 6. Verificar que el hash coincida
     if (receivedHash !== tokenData.hash) {
@@ -177,8 +175,6 @@ auth.post("/refresh", async (c) => {
 
     // 7. Verificar expiración
     const now = Math.floor(Date.now() / 1000);
-    console.log("⏰ Tiempo actual:", now);
-    console.log("⏰ Expira en:", tokenData.expiresAt);
 
     if (tokenData.expiresAt < now) {
       // Eliminar token expirado

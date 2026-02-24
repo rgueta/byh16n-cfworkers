@@ -7,25 +7,32 @@ coresRoutes.get("/:userId", async (c) => {
   try {
     const data = await c.env.DB.prepare(
       `
-        SELECT
-        c.id,
-        c.code,
-        c.createdAt,
-        c.initial,
-        c.expiry,
-        c.enable,
-        u.id AS userId,
-        u.username,
-        u.email,
-        u.avatar,
-        v.sim as visitorSim,
-        v.name as visitorName
-      FROM codes c
-      LEFT JOIN users u ON c.userId = u.id
-      LEFT JOIN visitors v ON v.id = c.visitorId
-      WHERE u.id = ?
-      ORDER BY c.expiry DESC
-      LIMIT 20;
+      SELECT
+          c.id,
+          c.name,
+          c.shortName,
+          c.address,
+          c.houses,
+          c.sim,
+          c.email,
+          c.enable,
+          c.remote,
+          c.code_expire,
+          c.webService,
+          c.contact_name,
+          c.contact_email,
+          c.contact_cell,
+          c.description,
+          co.shortName || '.' || s.shortName || '.' || ci.shortName ||
+          '.' || d.shortName || '.' || cp.shortName || '.' || c.shortName AS location
+      FROM cores c
+      JOIN cpus cp ON cp.id = c.cpuId
+      JOIN geolocations g ON g.id = c.geoId
+      JOIN divisions d ON d.id = cp.divisionId
+      JOIN cities ci ON ci.id = d.cityId
+      JOIN states s ON s.id = ci.stateId
+      JOIN countries co ON co.id = ci.countryId
+      ORDER BY c.id;
       `,
     )
       .bind(userId)
@@ -63,7 +70,9 @@ coresRoutes.get("/admin/:userId", async (c) => {
         c.contact_cell,
         c.description,
         co.shortName || '.' || s.shortName || '.' || ci.shortName ||
-        '.' || d.shortName || '.' || cp.shortName || '.' || c.shortName AS location
+        '.' || d.shortName || '.' || cp.shortName || '.' || c.shortName AS location,
+        g.latitud,
+        g.longitud
     FROM cores c
     JOIN cpus cp ON cp.id = c.cpuId
     JOIN geolocations g ON g.id = c.geoId

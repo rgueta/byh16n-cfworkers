@@ -47,9 +47,6 @@
 
 ----------------------CPUS  -------------------
 --
---
---
---
 -- CREATE TABLE cpus_tmp
 --  (id INTEGER PRIMARY KEY AUTOINCREMENT,
 --  	name TEXT,
@@ -82,7 +79,7 @@
 -- update cores set sim = '+526632032532' where id = 1;
 
 
---
+-----------------  cores  -------------------------
 -- SELECT
 --     c.id,
 --     c.name,
@@ -100,7 +97,9 @@
 --     c.contact_cell,
 --     c.description,
 --     co.shortName || '.' || s.shortName || '.' || ci.shortName ||
---     '.' || d.shortName || '.' || cp.shortName || '.' || c.shortName AS location
+--     '.' || d.shortName || '.' || cp.shortName || '.' || c.shortName AS location,
+--     g.latitud,
+--     g.longitud
 -- FROM cores c
 -- JOIN cpus cp ON cp.id = c.cpuId
 -- JOIN geolocations g ON g.id = c.geoId
@@ -108,6 +107,7 @@
 -- JOIN cities ci ON ci.id = d.cityId
 -- JOIN states s ON s.id = ci.stateId
 -- JOIN countries co ON co.id = ci.countryId
+-- ORDER BY c.id
 
 -- cores:
 --┌────┬───────────────────┬───────────┬────────────────────────┬────────┬───────────────┬────────────────────────┬────────┬────────┬─────────────┬────────────┬──────────────┬────────────────────────┬───────────────┬─────────────┬───────┬───────┐
@@ -155,11 +155,24 @@
 -- WHERE u.id = 1 AND locked = 0
 -- GROUP BY u.id, u.username, u.email
 --
-SELECT ce.*,c.code,u.house FROM code_events ce
-LEFT JOIN codes c ON c.id = ce.codeId
-LEFT JOIN users u ON u.id = c.userId
-WHERE ce.createdAt BETWEEN '2026-02-01 00:48:00' AND '2026-02-18 23:59:59'
-ORDER BY createdAt DESC
+--
+select json_group_array(json_object('id', id,'email', email,'username', username,
+   'pwd', pwd, 'name', name,'house', house,'sim', sim,
+   'gender', gender,'avatar',  avatar,'coreId', coreId,
+   'location', location,'locked', locked,'uuid', uuid,
+   'createdAt', createdAt,'updatedAt', updatedAt,
+   'blocked', blocked)) as user from users where email = 'ricardogueta@gmail.com'
+--
+--
+--
+--
+---------------------------------------------------
+
+-- SELECT ce.*,c.code,u.house FROM code_events ce
+-- LEFT JOIN codes c ON c.id = ce.codeId
+-- LEFT JOIN users u ON u.id = c.userId
+-- WHERE ce.createdAt BETWEEN '2026-02-01 00:48:00' AND '2026-02-18 23:59:59'
+-- ORDER BY createdAt DESC
 --
 
 -- Ext: Feb 14 15:03:53

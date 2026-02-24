@@ -1,12 +1,12 @@
 import { Hono } from "hono";
-import { verifyToken, verifyRole } from "../auth/auth.js";
+import { verifyToken, verifyRoleLevel } from "../auth/auth.js";
 
 const codeEventsRoutes = new Hono();
 
 codeEventsRoutes.get(
   "/:userId/:start/:end",
   verifyToken(),
-  verifyRole(["admin", "neighborAdmin", "neighbor"]),
+  verifyRoleLevel("neighbor"),
   async (c) => {
     if (c.req.param("userId") === undefined) {
       return c.json({ msg: "userId not received on server" }, 303);
