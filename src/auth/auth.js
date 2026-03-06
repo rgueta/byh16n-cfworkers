@@ -59,11 +59,11 @@ export const verifyRoleLevel = (role) => {
     const userRole = c.get("userRole");
     const userId = c.get("userId");
 
-    const roleLeve = await getRoleLevel(c.env.DB, role);
+    const roleLevel = await getRoleLevel(c.env.DB, role);
 
-    const userRoleLeve = await getUserRoleLevel(c.env.DB, userId);
+    const userRoleLevel = await getUserRoleLevel(c.env.DB, userId);
 
-    if (roleLeve.level > userRoleLeve.level) {
+    if (roleLevel.level > userRoleLevel.level) {
       return c.json(
         {
           error: "No tienes permisos para esta acción",

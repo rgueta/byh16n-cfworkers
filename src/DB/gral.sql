@@ -1,3 +1,55 @@
+---------------   config    ---------------
+
+----------------  nuevo      ---------------------
+SELECT
+
+  IFNULL(json_group_array(ai.device_uuid), '[]') as admin_device,
+  IFNULL(json_group_array(
+    json_object(
+      'name', ai.name,
+      'sim', ai.sim
+    )
+  ), '[]') as admin_sim,
+  IFNULL(json_group_array(
+    json_object(
+      'id', ai.id,
+      'name', ai.name,
+      'email', ai.email
+    )
+  ), '[]') as admin_email
+FROM configApp c
+LEFT JOIN configApp_adminInfo ca ON c.id = ca.configAppId
+LEFT JOIN admin_info ai ON ai.id = ca.adminInfoId
+GROUP BY c.id;
+
+
+----------- Original --------------------------
+
+-- SELECT c.debug,c.send_sms, c.backendUrl, c.localUrl,c.serverUrl,
+--   json_group_array(ai.device_uuid) as admin_device,
+--   json_group_array(
+--          json_object(
+--              'name', ai.name,
+--              'sim', ai.sim
+--           )
+--      ) as admin_sim,
+--      json_group_array(
+--             json_object(
+--                 'id', ai.id,
+--                 'name', ai.name,
+--                 'email', ai.email
+--              )
+--         ) as admin_email
+-- FROM configApp c
+-- LEFT JOIN configApp_adminInfo ca ON c.id = ca.configAppId
+-- LEFT JOIN admin_info ai ON ai.id = ca.adminInfoId
+-- GROUP BY c.id
+
+
+
+
+--------------  ALTER TABLES  ---------------------
+--
 -- CREATE TABLE codes_tmp (
 --  id INTEGER PRIMARY KEY AUTOINCREMENT,
 --  code TEXT,
@@ -120,6 +172,28 @@
 --│ 3  │ San Gabriel       │ SG        │ Hda. San Gabriel 10126 │ 20     │ +526632032532 │ ricardogueta@gmail.com │ 1      │ 1      │ 1           │ 1          │              │ ricardogueta@gmail.com │ +526641752182 │ null        │ 2     │ 5     │
 --└────┴───────────────────┴───────────┴────────────────────────┴────────┴───────────────┴────────────────────────┴────────┴────────┴─────────────┴────────────┴──────────────┴────────────────────────┴───────────────┴─────────────┴───────┴───────┘
 
+
+-----------------  CPUS  -------------------------
+-- SELECT
+--     cp.id,
+--     cp.name,
+--     co.shortName || '.' || s.shortName || '.' || ci.shortName ||
+--     '.' || d.shortName || '.' || cp.shortName ||
+--     CASE WHEN COUNT(c.shortName) > 0
+--          THEN '.' || GROUP_CONCAT(c.shortName, '.')
+--          ELSE ''
+--     END AS location
+-- FROM cpus cp
+-- LEFT JOIN divisions d ON d.id = cp.divisionId
+-- LEFT JOIN cities ci ON ci.id = d.cityId
+-- LEFT JOIN states s ON s.id = ci.stateId
+-- LEFT JOIN countries co ON co.id = ci.countryId
+-- LEFT JOIN cores c ON cp.id = c.cpuId
+-- LEFT JOIN geolocations g ON g.id = c.geoId
+-- GROUP BY cp.id, cp.name, co.shortName, s.shortName, ci.shortName, d.shortName, cp.shortName
+-- ORDER BY cp.id;
+
+
 --------- insert into cores  ----------------------
 -- insert into cores(name,shortName,address,houses,sim,email,enable,remote,code_expire,webService,contact_name,contact_email,contact_cell,description,cpuId,geoId)
 --       values("San Gabriel","SG","Hda. San Gabriel",20,"+526632032532","ricardogueta@gmail.com",1,1,1,1,"","ricardogueta@gmail.com","+526641752182","",2,5);
@@ -137,14 +211,14 @@
 ----------- insert into users ------------
 -- insert into users (email, username, pwd, name, house, sim,
 -- gender, avatar, coreId, location, locked, uuid, blocked)
--- values('ricardogueta@gmail.com','rgueta', '', 'Ricardo Gueta','14',
+-- values('fernando@gmail.com','fersanjuan', '', 'Fernando','13',
 -- '+526641752182','M', '',1, 'MX.BC.TJ.6.CG.SJ',0,'b8f7c9908aa28584',0)
 
 ----------- insert into userRoles ------------
 -- insert into userRoles(userId, roleId, assignedBy, expiresAt)
 -- values (1, 3, 1, '');
 --
--------------  Query user,roles  ----------------
+-------------  Query users,roles  ----------------
 -- SELECT
 -- u.id,
 -- GROUP_CONCAT(r.name, ', ') as role,
@@ -154,14 +228,55 @@
 -- LEFT JOIN roles r ON ur.roleId = r.id
 -- WHERE u.id = 1 AND locked = 0
 -- GROUP BY u.id, u.username, u.email
---
---
-select json_group_array(json_object('id', id,'email', email,'username', username,
-   'pwd', pwd, 'name', name,'house', house,'sim', sim,
-   'gender', gender,'avatar',  avatar,'coreId', coreId,
-   'location', location,'locked', locked,'uuid', uuid,
-   'createdAt', createdAt,'updatedAt', updatedAt,
-   'blocked', blocked)) as user from users where email = 'ricardogueta@gmail.com'
+
+                           ---- JSON format  --------------
+
+-- SELECT json_group_array(json_object(
+--         'id', u.id,
+--         'email', u.email,
+--         'username', u.username,
+--         'pwd', u.pwd,
+--         'name', u.name,
+--         'house', u.house,
+--         'sim', u.sim,
+--         'gender', u.gender,
+--         'avatar', u.avatar,
+--         'coreId', u.coreId,
+--         'location', u.location,
+--         'locked', u.locked,
+--         'uuid', u.uuid,
+--         'createdAt', u.createdAt,
+--         'updatedAt', u.updatedAt,
+--         'blocked', u.blocked,
+--         'roles', (
+--           SELECT json_group_array(json_object(
+--             'id', r.id,
+--             'name', r.name,
+--             'shortName', r.shortName,
+--             'level', r.level
+--           ))
+--           FROM userRoles ur2
+--           LEFT JOIN roles r ON ur2.roleId = r.id
+--           WHERE ur2.userId = u.id
+--         )
+--       )) as users
+--       FROM users u
+--       WHERE u.coreId = 1
+--       GROUP BY u.id, u.username, u.email;
+
+-- SELECT
+-- u.id, u.email,u.username, u.pwd,u.name,u.house,
+-- u.sim,u.gender,u.avatar,u.coreId,u.location,
+-- u.locked,u.uuid,u.createdAt,u.updatedAt,u.blocked,
+-- json_group_array(r.name) as roles
+-- FROM users u
+-- LEFT JOIN userRoles ur ON u.id = ur.userId
+-- LEFT JOIN roles r ON ur.roleId = r.id
+-- WHERE u.coreId = 1
+-- GROUP BY u.id, u.username, u.email;
+
+
+
 --
 --
 --

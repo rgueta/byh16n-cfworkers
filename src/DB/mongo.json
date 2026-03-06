@@ -1,3 +1,5 @@
+----------  byh16n  ------------
+
 {
   "_id": {"$oid": "60c53a453371034c5ac6637c"},
   "email": "ricardogueta@gmail.com",
@@ -13,3 +15,24 @@
   "roles": ["admin","neighborAdmin"],
   "coreSim": "6632032532"
 }
+
+
+----------- byh16workers -----------
+[
+{
+ "id":1,
+ "email":"ricardogueta@gmail.com",
+ "username":"rgueta",
+ "pwd":"f3ab8ffcfd433118c23c81f29784abfedf565702bef9a9b32d04fbb385a1a198",
+ "name":"Ricardo Gueta",
+ "house":"14",
+ "sim":"+526641752182",
+ "gender":"M",
+ "avatar":"",
+ "coreId":1,
+ "location":"MX.BC.TJ.6.CG.SJ",
+ "locked":0,
+ "uuid":"b8f7c9908aa28584",
+ "createdAt":"2026-02-13 18:40:34",
+ "updatedAt":"2026-02-13 18:40:34",
+ "blocked":0}]

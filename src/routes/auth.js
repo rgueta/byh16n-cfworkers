@@ -34,7 +34,6 @@ auth.post("/signin", async (c) => {
         c.remote,
         cpu.shortName AS cpu,
         country.shortName AS country,
-        state.name,
         city.shortName AS city,
         d.id AS div,
         conf.backendUrl,
