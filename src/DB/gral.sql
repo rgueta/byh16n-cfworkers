@@ -1,26 +1,26 @@
 ---------------   config    ---------------
 
 ----------------  nuevo      ---------------------
-SELECT
+-- SELECT
 
-  IFNULL(json_group_array(ai.device_uuid), '[]') as admin_device,
-  IFNULL(json_group_array(
-    json_object(
-      'name', ai.name,
-      'sim', ai.sim
-    )
-  ), '[]') as admin_sim,
-  IFNULL(json_group_array(
-    json_object(
-      'id', ai.id,
-      'name', ai.name,
-      'email', ai.email
-    )
-  ), '[]') as admin_email
-FROM configApp c
-LEFT JOIN configApp_adminInfo ca ON c.id = ca.configAppId
-LEFT JOIN admin_info ai ON ai.id = ca.adminInfoId
-GROUP BY c.id;
+--   IFNULL(json_group_array(ai.device_uuid), '[]') as admin_device,
+--   IFNULL(json_group_array(
+--     json_object(
+--       'name', ai.name,
+--       'sim', ai.sim
+--     )
+--   ), '[]') as admin_sim,
+--   IFNULL(json_group_array(
+--     json_object(
+--       'id', ai.id,
+--       'name', ai.name,
+--       'email', ai.email
+--     )
+--   ), '[]') as admin_email
+-- FROM configApp c
+-- LEFT JOIN configApp_adminInfo ca ON c.id = ca.configAppId
+-- LEFT JOIN admin_info ai ON ai.id = ca.adminInfoId
+-- GROUP BY c.id;
 
 
 ----------- Original --------------------------
@@ -213,6 +213,8 @@ GROUP BY c.id;
 -- gender, avatar, coreId, location, locked, uuid, blocked)
 -- values('fernando@gmail.com','fersanjuan', '', 'Fernando','13',
 -- '+526641752182','M', '',1, 'MX.BC.TJ.6.CG.SJ',0,'b8f7c9908aa28584',0)
+--
+--
 
 ----------- insert into userRoles ------------
 -- insert into userRoles(userId, roleId, assignedBy, expiresAt)

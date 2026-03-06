@@ -92,58 +92,116 @@ usersRoutes.post("/new/:userId", async (c) => {
   try {
     const userId = c.req.param("userId");
     const pkg = await c.req.json();
-    console.log("userId: ", userId);
-    console.log("pkg: ", pkg);
 
-    // Construir la consulta dinámicamente
-    const setClauses = [];
-    const values = [];
+    // Extraer roles explícitamente del pkg
+    const { roles: rolesFromPkg, ...userData } = pkg;
 
-    // Recorrer las propiedades de qry
-    for (const [key, value] of Object.entries(pkg)) {
-      setClauses.push(`${key} = ?`);
-      values.push(value);
+    // Asegurar que roles sea un array plano
+    let roles = [];
+    if (rolesFromPkg) {
+      if (Array.isArray(rolesFromPkg)) {
+        roles = rolesFromPkg.flat(); // Convierte [[4]] en [4]
+      }
     }
 
-    const qry =
-      "INSERT INTO users" +
-      "(email, username, pwd, name, house, sim, gender, avatar, coreId, location, locked, uuid, blocked)" +
-      "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+    // Definir el orden exacto de las columnas
+    const columnOrder = [
+      "email",
+      "username",
+      "pwd",
+      "name",
+      "house",
+      "sim",
+      "gender",
+      "avatar",
+      "coreId",
+      "location",
+      "locked",
+      "uuid",
+      "blocked",
+    ];
 
-    console.log("values:", values);
-    console.log("qry: ", qry);
+    // Construir la consulta de usuario
+    const values = columnOrder.map((col) =>
+      userData[col] !== undefined ? userData[col] : null,
+    );
 
+    const qry = `INSERT INTO users (${columnOrder.join(", ")})
+                   VALUES (${columnOrder.map(() => "?").join(", ")})`;
+
+    // Primero insertar el usuario
     const result = await c.env.DB.prepare(qry)
       .bind(...values)
       .run();
 
-    // Verificar si se actualizó algún registro
-    if (result.meta.changes === 0) {
-      return c.json(
-        {
-          error: "No se pudo crear el usuario",
-        },
-        404,
-      );
+    if (!result.success) {
+      throw new Error("Error al insertar usuario");
+    }
+
+    // Obtener el ID del usuario insertado
+    const userIdQuery = await c.env.DB.prepare(
+      "SELECT last_insert_rowid() as id",
+    ).first();
+
+    if (!userIdQuery) {
+      throw new Error("No se pudo obtener el ID del usuario");
+    }
+
+    const newUserId = userIdQuery.id;
+
+    // Insertar roles (si hay)
+    if (roles.length > 0) {
+      // Usar batch para insertar todos los roles en una sola operación
+      const roleStatements = roles.map((roleId) => {
+        const roleIdNum = parseInt(roleId);
+        if (isNaN(roleIdNum)) {
+          throw new Error(`RoleId inválido: ${roleId}`);
+        }
+        return c.env.DB.prepare(
+          "INSERT INTO userRoles (userId, roleId, assignedBy, expiresAt) VALUES (?, ?, ?, ?)",
+        ).bind(newUserId, roleIdNum, userId, null);
+      });
+
+      const roleResults = await c.env.DB.batch(roleStatements);
+
+      // Verificar que todos los roles se insertaron correctamente
+      const allRolesSuccess = roleResults.every((r) => r.success);
+      if (!allRolesSuccess) {
+        throw new Error("Error al asignar algunos roles");
+      }
     }
 
     // Respuesta exitosa
-    return c.json({
-      success: true,
-      message: "Usuario agregado",
-      data: {
-        updated: qry,
-        changes: result.meta.changes,
-      },
-    });
-  } catch (error) {
-    console.error("Error:", error);
     return c.json(
       {
-        error: "Error interno del servidor",
+        success: true,
+        userId: newUserId,
+        assignedRoles: roles,
+        message: "Usuario creado y roles asignados exitosamente",
+      },
+      201,
+    );
+  } catch (error) {
+    console.error("Error:", error);
+
+    // NO hacer ROLLBACK explícito - D1 lo maneja automáticamente
+
+    // Determinar código HTTP apropiado
+    let statusCode = 400;
+    let errorMessage = error.message;
+
+    if (error.message.includes("UNIQUE constraint")) {
+      statusCode = 409;
+      errorMessage = "El email o username ya está registrado";
+    }
+
+    return c.json(
+      {
+        success: false,
+        error: errorMessage,
         details: error.message,
       },
-      500,
+      statusCode,
     );
   }
 });
