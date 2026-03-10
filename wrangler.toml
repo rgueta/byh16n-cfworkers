@@ -9,6 +9,11 @@ JWT_SECRET="long-life-bytheg-project-123456789"
 ACCESS_TOKEN_EXPIRY = 300  # 5 * 60 ( 5 min en seg.)
 REFRESH_TOKEN_EXPIRY = 1382000  # 16 * 24 * 60 * 60 (16 dias en seg.)
 REFRESH_TOKEN_LIMIT = 432000 #(5 * 24 * 60 * 60) # ( 5 dias en seg.)
+public_host='https://ec2-100-24-58-74.compute-1.amazonaws.com/'
+images_root="http://s3.us-west-2.amazonaws.com/byh16n.s3/"
+
+
+
 
 [[d1_databases]]
 binding = "DB"

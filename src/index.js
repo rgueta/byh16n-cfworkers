@@ -7,6 +7,7 @@ import codeRoutes from "./routes/codes.js";
 import coresRoutes from "./routes/cores.js";
 import roleRoutes from "./routes/roles.js";
 import cpusRoutes from "./routes/cpus.js";
+import pwdRstRoutes from "./routes/pwdRST.js";
 
 // ----  JWT  -----
 import { hashPwd, verifyPwd, sha256 } from "./auth/pwd.js";
@@ -167,6 +168,7 @@ app.route("/api/cpus", cpusRoutes);
 app.route("/api/cores", coresRoutes);
 app.route("/api/codes", codeRoutes);
 app.route("/api/roles", roleRoutes);
+app.route("/api/pwdReset", pwdRstRoutes);
 
 app.get("/api/env", (c) => {
   return c.json({

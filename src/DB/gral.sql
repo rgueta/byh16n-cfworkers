@@ -49,20 +49,33 @@
 
 
 --------------  ALTER TABLES  ---------------------
---
--- CREATE TABLE codes_tmp (
---  id INTEGER PRIMARY KEY AUTOINCREMENT,
---  code TEXT,
---  userId INTEGER,
---  device_plaform TEXT,
---  initial TEXT,
---  expiry TEXT,
---  enable INTEGER NOT NULL DEFAULT 1 CHECK (enable IN (0,1)),
---  createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
---  updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
---  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
---  );
 
+-- CREATE TABLE users_tmp (
+--   id INTEGER PRIMARY KEY AUTOINCREMENT,
+--   email TEXT UNIQUE NOT NULL,
+--   username TEXT,
+--   pwd TEXT,
+--   name TEXT,
+--   house TEXT,
+--   sim TEXT,
+--   gender TEXT,
+--   avatar TEXT,
+--   coreId INTEGER,
+--   location TEXT,
+--   locked INTEGER,
+--   uuid TEXT,
+--   createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--   updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--   blocked INTEGER NOT NULL DEFAULT 0 CHECK (blocked IN (0,1)),
+--   FOREIGN KEY (coreId) REFERENCES cores(id) ON DELETE CASCADE
+--   );
+
+
+-- INSERT INTO users_tmp SELECT * FROM users;
+
+-- DROP TABLE users;
+
+-- ALTER TABLE users_tmp RENAME TO users;
 
 -- insert into codes_tmp (code, userId, device_plaform, initial, expiry, enable, createdAt, updatedAt )
 -- select code, userId, device_plaform, initial, expiry, enable, createdAt, updatedAt  from codes;
@@ -217,8 +230,8 @@
 --
 
 ----------- insert into userRoles ------------
--- insert into userRoles(userId, roleId, assignedBy, expiresAt)
--- values (1, 3, 1, '');
+insert into userRoles(userId, roleId, assignedBy, expiresAt)
+values (2, 4, 1, '');
 --
 -------------  Query users,roles  ----------------
 -- SELECT
