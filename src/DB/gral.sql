@@ -50,32 +50,39 @@
 
 --------------  ALTER TABLES  ---------------------
 
--- CREATE TABLE users_tmp (
---   id INTEGER PRIMARY KEY AUTOINCREMENT,
---   email TEXT UNIQUE NOT NULL,
---   username TEXT,
---   pwd TEXT,
---   name TEXT,
---   house TEXT,
---   sim TEXT,
---   gender TEXT,
---   avatar TEXT,
---   coreId INTEGER,
---   location TEXT,
---   locked INTEGER,
---   uuid TEXT,
---   createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
---   updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
---   blocked INTEGER NOT NULL DEFAULT 0 CHECK (blocked IN (0,1)),
---   FOREIGN KEY (coreId) REFERENCES cores(id) ON DELETE CASCADE
---   );
+CREATE TABLE users_tmp (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT UNIQUE NOT NULL,
+  username TEXT,
+  pwd TEXT,
+  name TEXT,
+  house TEXT,
+  sim TEXT,
+  gender TEXT,
+  avatar TEXT,
+  coreId INTEGER,
+  location TEXT,
+  locked INTEGER,
+  uuid TEXT,
+  blocked INTEGER NOT NULL DEFAULT 0 CHECK (blocked IN (0,1)),
+  setup_token TEXT,
+  setup_expires TIMESTAMP,
+  createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (coreId) REFERENCES cores(id) ON DELETE CASCADE
+  );
 
 
--- INSERT INTO users_tmp SELECT * FROM users;
+INSERT INTO users_tmp (email, username, pwd, name, house, sim, gender, avatar, coreId, location, locked, uuid, blocked, createdAt, updatedAt)
+SELECT email, username, pwd, name, house, sim, gender, avatar, coreId, location, locked, uuid, blocked, createdAt, updatedAt FROM users;
 
--- DROP TABLE users;
+DROP TABLE users;
 
--- ALTER TABLE users_tmp RENAME TO users;
+ALTER TABLE users_tmp RENAME TO users;
+
+
+
+
 
 -- insert into codes_tmp (code, userId, device_plaform, initial, expiry, enable, createdAt, updatedAt )
 -- select code, userId, device_plaform, initial, expiry, enable, createdAt, updatedAt  from codes;

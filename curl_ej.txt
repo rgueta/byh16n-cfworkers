@@ -103,3 +103,10 @@ curl -X POST http://localhost:8787/api/auth/refresh \
     "pwd":"1234567",
     "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwidHlwZSI6InJlZnJlc2giLCJqdGkiOiJhYmNkMTIzNCIsImlhdCI6MTc0MDAwMDAwMCwiZXhwIjoxNzQxMjAwMDAwfQ.ejemploFirmaRefreshToken"
   }'
+
+
+------to use RESEND  --------------
+curl -X POST http://localhost:8787/api/users/backstage \
+  -H "Authorization: Bearer re_7Mut4qEb_FVKrMEVwKr7z4L1hHtgJJGZc \
+  -H "Content-Type: application/json" \
+  -d "{}"
