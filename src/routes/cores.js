@@ -48,7 +48,8 @@ coresRoutes.get("/:userId", async (c) => {
   }
 });
 
-coresRoutes.get("/cpu/:cpuName/:userId", async (c) => {
+coresRoutes.get("/cpu/:cpuId/:userId", async (c) => {
+  const cpuId = c.req.param("cpuId");
   const userId = c.req.param("userId");
   try {
     const data = await c.env.DB.prepare(
@@ -78,11 +79,11 @@ coresRoutes.get("/cpu/:cpuName/:userId", async (c) => {
       JOIN cities ci ON ci.id = d.cityId
       JOIN states s ON s.id = ci.stateId
       JOIN countries co ON co.id = ci.countryId
-      WHERE cp.name = ?
+      WHERE cp.id = ?
       ORDER BY c.id;
       `,
     )
-      .bind(cpuName)
+      .bind(cpuId)
       .all();
 
     if (!data) {
