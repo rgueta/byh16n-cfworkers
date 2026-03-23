@@ -1,10 +1,12 @@
 import { Hono } from "hono";
 import { verifyToken, verifyRoleLevel } from "../auth/auth.js";
+import { hashPwd } from "../auth/pwd.js";
+import { insertLog } from "../tools.js";
 
 const usersRoutes = new Hono();
 import { html } from "hono/html";
 
-usersRoutes.get("/:email", async (c) => {
+usersRoutes.get("/bu/:email", async (c) => {
   const email = c.req.param("email");
   try {
     const data = await c.env.DB.prepare(
@@ -97,6 +99,7 @@ usersRoutes.post("/new/:userId", async (c) => {
     // Crear token
     const setupToken = crypto.randomUUID();
     const expires = new Date(Date.now() + c.env.BACKSTAGE_TOKEN_EXPIRY); // Expira en 24 hora
+    const expiresISO = expires.toISOString(); // Formato: '2026-03-19T21:07:43.000Z'
 
     // Extraer roles explícitamente del pkg
     const { roles: rolesFromPkg, ...userData } = pkg;
@@ -118,7 +121,7 @@ usersRoutes.post("/new/:userId", async (c) => {
 
     // Agregar datos del token para setup password
     pkg.setup_token = setupToken;
-    pkg.setup_expires = expires;
+    pkg.setup_expires = expiresISO;
 
     if (await RowExists(c.env.DB, "users", { email: pkg.email })) {
       return c.json(
@@ -178,12 +181,13 @@ usersRoutes.post("/new/:userId", async (c) => {
     }
 
     // ====== crea el correo pwdRst ==================
-
     const emailResponse = sendPwdRST(
+      pkg.name,
       isDemo ? adminEmail : pkg.email,
       setupToken,
       c.env.public_host,
       c.env.images_root,
+      c.env.RESEND_API_KEY,
     );
 
     if (!(await emailResponse).success) {
@@ -223,169 +227,360 @@ usersRoutes.post("/new/:userId", async (c) => {
   }
 });
 
-usersRoutes.post("/backstage", async (c) => {
-  // const { email, name } = await c.req.json()
-  const email = "ricardogueta@gmail.com";
-  const name = "Ricardo Gueta";
-  const setupToken = crypto.randomUUID();
-  const expires = Date.now() + c.env.BACKSTAGE_TOKEN_EXPIRY; // Expira en 24 hora
-
-  const setupUrl = `${c.env.public_host}setupPassword?token=${setupToken}`;
-
-  // 3. Enviar el correo (ejemplo usando una API como Resend o Mailer)
-  const emailRes = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${c.env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: "onboarding@resend.dev",
-      to: [email],
-      subject: "Configura tu contraseña",
-      html: await pwdRST_HTML(c.env.public_host, c.env.images_root, setupToken),
-    }),
-  });
-
-  return c.json({ success: true, message: "Usuario creado y correo enviado" });
-});
-
-usersRoutes.get("/setupPassword/:token", (c) => {
-  const token = c.req.param("token");
-
-  if (!token) return c.text("Token faltante", 400);
-
-  return c.html(html`
-    <!DOCTYPE html>
-    <html lang="es">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Configurar Contraseña</title>
-        <style>
-          body {
-            font-family: sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background: #f4f4f9;
-            margin: 0;
-          }
-          .card {
-            background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 400px;
-          }
-          input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-          }
-          button {
-            width: 100%;
-            padding: 10px;
-            background: #3880ff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-          }
-          button:disabled {
-            background: #ccc;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="card">
-          <h2>Nueva Contraseña</h2>
-          <p>Crea una contraseña para activar tu cuenta.</p>
-          <form action="/api/users/completeSetup" method="POST">
-            <input type="hidden" name="token" value="${token}" />
-            <input
-              type="password"
-              name="password"
-              placeholder="Mínimo 8 caracteres"
-              required
-              minlength="8"
-            />
-            <input
-              type="password"
-              name="confirm"
-              placeholder="Confirma tu contraseña"
-              required
-            />
-            <button type="submit">Activar Cuenta</button>
-          </form>
-
-          <script>
-            // Este script corre en el navegador del usuario, NO en el correo.
-            document.querySelector("form").onsubmit = function (e) {
-              const p1 = this.password.value;
-              const p2 = this.confirm.value;
-              if (p1 !== p2) {
-                alert("Las contraseñas no coinciden");
-                e.preventDefault();
-              }
-            };
-          </script>
-        </div>
-      </body>
-    </html>
-  `);
-});
-
-usersRoutes.post("/completeSetup", async (c) => {
+usersRoutes.get("/pwdRST/:email", async (c) => {
+  const startTime = Date.now();
   try {
-    const body = await c.req.parseBody();
-    const { token, password } = body;
+    const email = c.req.param("email");
+    if (!email) {
+      return c.json(
+        {
+          success: false,
+          msg: "Error:falta email",
+          details: "El correo es requerido",
+        },
+        400,
+      );
+    }
 
-    // const token = c.req.param("token");
-    console.log(`token: ${token}, pwd: ${password}`);
+    // 1.- Verifica tu corre
+    const user = await c.env.DB.prepare(
+      `SELECT id,name,setup_token,setup_expires FROM users WHERE email = ?;`,
+    )
+      .bind(email)
+      .first();
+
+    if (!user) {
+      return c.json(
+        {
+          success: false,
+          msg: "Error:No se encontro el correo",
+          details: "El correo es invalido o no existe en sistem",
+        },
+        400,
+      );
+    } else {
+      // Verifica si ya existe una solicitud vigente
+      if (new Date(Date.now()) < new Date(user.setup_expires)) {
+        return c.json(
+          {
+            success: false,
+            msg: "Existe solicitud vigente para: " + user.name,
+            details:
+              "expira en: [ " +
+              new Date(user.setup_expires).toLocaleString("es-MX") +
+              " ]",
+          },
+          400,
+        );
+      }
+
+      // Crear token
+      const setupToken = crypto.randomUUID();
+      const expires = new Date(Date.now() + c.env.BACKSTAGE_TOKEN_EXPIRY); // Expira en 24 hora
+      const expiresISO = expires.toISOString(); // Formato: '2026-03-19T21:07:43.000Z'
+
+      try {
+        // 2.- Crear la solicitud
+        const result = await c.env.DB.prepare(
+          `UPDATE users SET setup_token = ?, setup_expires = ? WHERE email = ?;`,
+        )
+          .bind(setupToken, expiresISO, email)
+          .run();
+
+        // 3.- Enviar correo
+        try {
+          // ====== crea el correo pwdRst ==================
+          const emailResponse = sendPwdRST(
+            user.name,
+            email,
+            setupToken,
+            new Date(expiresISO).toLocaleString(),
+            c.env.public_host,
+            c.env.images_root,
+            c.env.RESEND_API_KEY,
+          );
+
+          if (!(await emailResponse).success) {
+            console.log(
+              "Error al enviar correo, ",
+              (await emailResponse).details,
+            );
+          }
+
+          const responseTime = Date.now() - startTime;
+          // Registra la solicitud en log
+          const pkgLog = {
+            log_type: "request",
+            event_type: "pwdRST",
+            severity: "info",
+            endpoint: "api/users/pwdRST",
+            method: "GET",
+            status_code: "200",
+            response_time_ms: responseTime,
+            user_id: parseInt(user.id, 10), // Convertir a entero,
+          };
+          insertLog(c.env.DB, pkgLog);
+
+          // Respuesta exitosa
+          return c.json(
+            {
+              success: true,
+              expires: expiresISO,
+              userId: user.id,
+              message: "Solicitud aceptada",
+            },
+            201,
+          );
+        } catch (error) {
+          console.error("Error:", error);
+
+          // Determinar código HTTP apropiado
+          let statusCode = 400;
+          let errorMessage = error.message;
+
+          if (error.message.includes("UNIQUE constraint")) {
+            statusCode = 409;
+            errorMessage = "El email o username ya está registrado";
+          }
+
+          return c.json(
+            {
+              success: false,
+              error: errorMessage,
+              details: error.message,
+            },
+            statusCode,
+          );
+        }
+      } catch (err) {
+        return c.json(
+          {
+            success: false,
+            msg: "Error:al recuperar contraseña (al actualizar users)",
+            details: err.message,
+          },
+          500,
+        );
+      }
+
+      return c.json(user || {}, 200);
+    }
   } catch (err) {
     return c.json(
       {
-        msg: "error",
-        detail: err.message,
+        success: false,
+        msg: "Error:al recuperar contraseña",
+        details: err.message,
+      },
+      500,
+    );
+  }
+});
+
+usersRoutes.get("/backstage/:userId", async (c) => {
+  try {
+    const users = await c.env.DB.prepare(
+      `SELECT u.id,u.name,u.house,u.uuid,u.notes,u.location as path,
+      u.setup_token,u.setup_expires, u.email, c.name as coreName,
+      cp.name as cpuName,u.sim,c.sim as coreSim,u.notes,
+      u.setup_token as token, u.setup_expires as tokenExpires
+      FROM users u
+      LEFT JOIN cores c ON c.id = u.coreId
+      JOIN cpus cp ON c.cpuId = cp.id
+      WHERE u.pwd = '' OR u.pwd = ' ' OR u.pwd = NULL;`,
+    ).all();
+
+    console.log("users:", users);
+
+    if (!users) {
+      return c.json(
+        {
+          success: false,
+          msg: "No hay usuarios pendientes por activar",
+          details: "",
+        },
+        400,
+      );
+    }
+
+    return c.json(users, 200);
+  } catch (err) {
+    return c.json(
+      {
+        success: false,
+        msg: "Error, consulata",
+        details: err.message,
       },
       400,
     );
   }
 
-  return c.json({ msg: "Ok" }, 200);
+  return c.json({ success: true, message: "Usuario creado y correo enviado" });
 });
 
-usersRoutes.post("/completeSetup__", async (c) => {
-  const body = await c.req.parseBody();
-  const { token, password } = body;
+usersRoutes.get("/setupPassword/:token", async (c) => {
+  const token = c.req.param("token");
+
+  if (!token) return c.text("Token faltante", 400);
 
   try {
     // 1. Validar token en D1
     const user = await c.env.DB.prepare(
-      "SELECT id, setup_expires FROM users WHERE setup_token = ?",
+      "SELECT id, setup_expires, email FROM users WHERE setup_token = ?",
     )
       .bind(token)
       .first();
 
-    if (!user || Date.now() > user.setup_expires) {
-      return c.html("<h1>Error: El enlace expiró o es inválido</h1>", 400);
+    console.log(
+      `Estoy verificando timestamp ahora: ${new Date(Date.now())}, expires: ${new Date(user.setup_expires)} `,
+    );
+    if (!user || new Date(Date.now()) > new Date(user.setup_expires)) {
+      return c.html(
+        `
+        <div style="text-align:center; padding: 50px; font-family: sans-serif;">
+          <h1>¡Error: El enlace expiró o es inválido!</h1>
+          <p>Expira en: ${new Date(user.setup_expires).toLocaleString("es-MX")}.</p>
+          <h2>¡Favor de ponerte en contacto con el area tecnica!</h2>
+        </div>`,
+        400,
+      );
+    }
+
+    return c.html(html`
+      <!DOCTYPE html>
+      <html lang="es">
+        <head>
+          <meta charset="UTF-8" />
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+          />
+          <title>Configurar Contraseña</title>
+          <style>
+            body {
+              font-family: sans-serif;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              height: 100vh;
+              background: #f4f4f9;
+              margin: 0;
+            }
+            .card {
+              background: white;
+              padding: 2rem;
+              border-radius: 8px;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+              width: 100%;
+              max-width: 400px;
+            }
+            input {
+              width: 100%;
+              padding: 10px;
+              margin: 10px 0;
+              border: 1px solid #ddd;
+              border-radius: 4px;
+              box-sizing: border-box;
+            }
+            button {
+              width: 100%;
+              padding: 10px;
+              background: #3880ff;
+              color: white;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+            }
+            button:disabled {
+              background: #ccc;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <h2>Nueva Contraseña</h2>
+            <p>Crea una contraseña para activar tu cuenta.</p>
+            <form action="/api/users/completeSetup" method="POST">
+              <input type="hidden" name="token" value="${token}" />
+              <input
+                type="password"
+                name="password"
+                placeholder="Mínimo 8 caracteres"
+                required
+                minlength="8"
+              />
+              <input
+                type="password"
+                name="confirm"
+                placeholder="Confirma tu contraseña"
+                required
+              />
+              <button type="submit">Activar Cuenta</button>
+            </form>
+
+            <script>
+              // Este script corre en el navegador del usuario, NO en el correo.
+              document.querySelector("form").onsubmit = function (e) {
+                const p1 = this.password.value;
+                const p2 = this.confirm.value;
+                if (p1 !== p2) {
+                  alert("Las contraseñas no coinciden");
+                  e.preventDefault();
+                }
+              };
+            </script>
+          </div>
+        </body>
+      </html>
+    `);
+  } catch (err) {
+    return c.json(
+      {
+        success: false,
+        msg: "Error interno",
+        details: err.message,
+      },
+      500,
+    );
+  }
+});
+
+usersRoutes.post("/completeSetup", async (c) => {
+  const body = await c.req.parseBody();
+  const { token, password } = body;
+
+  console.log(`token: ${token}, password: ${password}`);
+
+  try {
+    // 1. Validar token en D1
+    const user = await c.env.DB.prepare(
+      "SELECT id, setup_expires, email FROM users WHERE setup_token = ?",
+    )
+      .bind(token)
+      .first();
+
+    console.log(
+      `Estoy verificando timestamp ahora: ${new Date(Date.now())}, expires: ${new Date(user.setup_expires)} `,
+    );
+    if (!user || new Date(Date.now()) > new Date(user.setup_expires)) {
+      return c.html(
+        `
+        <div style="text-align:center; padding: 50px; font-family: sans-serif;">
+          <h1>¡Error: El enlace expiró o es inválido!</h1>
+          <p>Expira en: ${new Date(user.setup_expires)}.</p>
+          <h2>¡Favor de ponerte en contacto con el area tecnica!</h2>
+        </div>`,
+        400,
+      );
     }
 
     // 2. Encriptar (usando la función Web Crypto que vimos antes)
-    const hashedPassword = await hashPassword(password);
+    const hashedPassword = await hashPwd(password, user.email.toLowerCase());
 
     // 3. Actualizar y Limpiar
     await c.env.DB.prepare(
       `
-      UPDATE users
-      SET password = ?, setup_token = NULL, setup_expires = NULL, status = 'active'
-      WHERE id = ?
+      UPDATE users SET pwd = ? WHERE id = ?
     `,
     )
       .bind(hashedPassword, user.id)
@@ -398,7 +593,14 @@ usersRoutes.post("/completeSetup__", async (c) => {
       </div>
     `);
   } catch (err) {
-    return c.text("Error interno", 500);
+    return c.json(
+      {
+        success: false,
+        msg: "Error interno",
+        details: err.message,
+      },
+      500,
+    );
   }
 });
 
@@ -535,21 +737,29 @@ usersRoutes.delete("/:userId/:delUserId", async (c) => {
   }
 });
 
-async function sendPwdRST(email, token, publicHost, imagesRoot) {
+async function sendPwdRST(
+  name,
+  email,
+  token,
+  expires,
+  publicHost,
+  imagesRoot,
+  RESEND_API_KEY,
+) {
   const setupUrl = `${publicHost}/setupPassword?token=${token}`;
 
   try {
     const emailRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${c.env.RESEND_API_KEY}`,
+        Authorization: `Bearer ${RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         from: "onboarding@resend.dev",
         to: [email],
         subject: "Configura tu contraseña",
-        html: await pwdRST_HTML(publicHost, imagesRoot, token),
+        html: await pwdRST_HTML(publicHost, imagesRoot, token, expires, name),
       }),
     });
     return { success: true, message: "Correo enviado" };
@@ -702,7 +912,7 @@ async function addRecord(DB, table, fields) {
   }
 }
 
-async function pwdRST_HTML(publicHost, imagesRoot, token) {
+async function pwdRST_HTML(publicHost, imagesRoot, token, expires, name) {
   const html = `
     <!DOCTYPE html>
     <html>
@@ -727,13 +937,13 @@ async function pwdRST_HTML(publicHost, imagesRoot, token) {
                 </div>
             </div>
             <h3>Reinicio de contraseña</h3>
-            <p>Hola !</p>
-            <p>Hemos recibido una solicitud de reinicio de contraseña para tu cuenta,
+            <p>Hola ${name} !</p>
+            <p>Hemos recibido una solicitud de reinicio de contraseña para tu cuenta, expira en: [ ${expires} ],
                 con gusto te ayudaremos con tu solicitud, para continuar con este proceso haz click
                 en el siguiente boton
             </p>
-            <a href=${publicHost}/api/users/completeSetup?token=${token} target='#'>
-                <input type="button" value="RECUPERAR CLAVE">
+            <a href=${publicHost}/api/users/setupPassword/${token} target='#'>
+                <input type="button" value="ACTIVAR CLAVE">
             </a>
             <p>
                 Si no quieres reiniciar tu contraseña, tan solo ignora este correo y accesa a nuestros servicios
@@ -742,48 +952,6 @@ async function pwdRST_HTML(publicHost, imagesRoot, token) {
         </body>
 
     </html>
-    `;
-  return html;
-}
-
-async function pwdRST_HTML_(token) {
-  const html = `
-    <!DOCTYPE html>
-        <html lang="es">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Configurar Contraseña</title>
-          <style>
-            body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f4f4f9; margin: 0; }
-            .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-            input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-            button { width: 100%; padding: 10px; background: #3880ff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-            button:disabled { background: #ccc; }
-          </style>
-        </head>
-        <body>
-          <div class="card">
-            <h2>Nueva Contraseña</h2>
-            <p>Crea una contraseña para activar tu cuenta.</p>
-            <form action="/completeSetup" method="POST">
-              <input type="hidden" name="token" value="${token}">
-              <input type="password" name="password" placeholder="Mínimo 8 caracteres" required minlength="8">
-              <input type="password" name="confirm" placeholder="Confirma tu contraseña" required>
-              <button type="submit">Activar Cuenta</button>
-            </form>
-          </div>
-          <script>
-            const form = document.querySelector('form');
-            form.onsubmit = (e) => {
-              if(form.password.value !== form.confirm.value) {
-                alert('Las contraseñas no coinciden');
-                return false;
-              }
-            };
-          </script>
-        </body>
-        </html>
     `;
   return html;
 }

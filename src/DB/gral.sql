@@ -49,36 +49,120 @@
 
 
 --------------  ALTER TABLES  ---------------------
+-- LOGS  ------------------------------
+--
+CREATE TABLE app_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    log_type TEXT NOT NULL,           -- 'error', 'request', 'security', 'audit'
+    event_type TEXT,                  -- 'password_recovery', 'api_error', 'auth_failure'
+    severity TEXT,                    -- 'debug', 'info', 'warning', 'error', 'critical'
 
-CREATE TABLE users_tmp (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  email TEXT UNIQUE NOT NULL,
-  username TEXT,
-  pwd TEXT,
-  name TEXT,
-  house TEXT,
-  sim TEXT,
-  gender TEXT,
-  avatar TEXT,
-  coreId INTEGER,
-  location TEXT,
-  locked INTEGER,
-  uuid TEXT,
-  blocked INTEGER NOT NULL DEFAULT 0 CHECK (blocked IN (0,1)),
-  setup_token TEXT,
-  setup_expires TIMESTAMP,
-  createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (coreId) REFERENCES cores(id) ON DELETE CASCADE
-  );
+    -- Datos de la petición
+    endpoint TEXT,
+    method TEXT,                      -- 'GET', 'POST', 'PUT', 'DELETE'
+    status_code INTEGER,
+    response_time_ms INTEGER,
+
+    -- Datos del usuario
+    user_id TEXT,
+    user_email TEXT,
+    client_ip TEXT,
+    user_agent TEXT,
+
+    -- Contenido
+    request_body TEXT,                -- JSON string
+    error_message TEXT,
+    error_trace TEXT,                 -- Stack trace
+    additional_data TEXT,             -- JSON string para datos adicionales
+
+    -- Metadatos
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_date DATE DEFAULT CURRENT_DATE,
+    created_time TIME DEFAULT CURRENT_TIME
+);
+
+-- Índices para búsquedas eficientes
+CREATE INDEX idx_log_type ON app_logs(log_type);
+CREATE INDEX idx_event_type ON app_logs(event_type);
+CREATE INDEX idx_created_at ON app_logs(created_at);
+CREATE INDEX idx_user_id ON app_logs(user_id);
+CREATE INDEX idx_endpoint ON app_logs(endpoint);
+CREATE INDEX idx_severity ON app_logs(severity);
 
 
-INSERT INTO users_tmp (email, username, pwd, name, house, sim, gender, avatar, coreId, location, locked, uuid, blocked, createdAt, updatedAt)
-SELECT email, username, pwd, name, house, sim, gender, avatar, coreId, location, locked, uuid, blocked, createdAt, updatedAt FROM users;
 
-DROP TABLE users;
+-- CREATE TABLE app_logs (
+--     id INTEGER PRIMARY KEY AUTOINCREMENT,
+--     log_type TEXT NOT NULL,
+--     event_type TEXT,
+--     severity TEXT,
+--     endpoint TEXT,
+--     method TEXT,
+--     status_code INTEGER,
+--     response_time_ms INTEGER,
 
-ALTER TABLE users_tmp RENAME TO users;
+--     user_id TEXT,
+--     user_email TEXT,
+--     client_ip TEXT,
+--     user_agent TEXT,
+
+--     request_body TEXT,
+--     error_message TEXT,
+--     error_trace TEXT,
+--     additional_data TEXT,
+
+--     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+--     created_date DATE DEFAULT CURRENT_DATE,
+--     created_time TIME DEFAULT CURRENT_TIME
+-- );
+
+-- -- Índices para búsquedas eficientes
+-- CREATE INDEX idx_log_type ON app_logs(log_type);
+-- CREATE INDEX idx_event_type ON app_logs(event_type);
+-- CREATE INDEX idx_created_at ON app_logs(created_at);
+-- CREATE INDEX idx_user_id ON app_logs(user_id);
+-- CREATE INDEX idx_endpoint ON app_logs(endpoint);
+-- CREATE INDEX idx_severity ON app_logs(severity);
+
+
+
+--
+--
+--
+--
+--
+-- USERS
+
+-- CREATE TABLE users_tmp (
+--   id INTEGER PRIMARY KEY AUTOINCREMENT,
+--   email TEXT UNIQUE NOT NULL,
+--   username TEXT,
+--   pwd TEXT,
+--   name TEXT,
+--   house TEXT,
+--   sim TEXT,
+--   gender TEXT,
+--   avatar TEXT,
+--   coreId INTEGER,
+--   location TEXT,
+--   uuid TEXT,
+--   locked INTEGER,
+--   blocked INTEGER NOT NULL DEFAULT 0 CHECK (blocked IN (0,1)),
+--   notes TEXT,
+--   setup_token TEXT,
+--   setup_expires TIMESTAMP,
+--   createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--   updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--   FOREIGN KEY (coreId) REFERENCES cores(id) ON DELETE CASCADE
+--   );
+
+
+-- INSERT INTO users_tmp (email, username, pwd, name, house, sim, gender, avatar, coreId, location, uuid, locked, blocked, createdAt, updatedAt)
+--                 SELECT email, username, pwd, name, house, sim, gender, avatar, coreId, location, uuid, locked, blocked, createdAt, updatedAt FROM users;
+
+-- DROP TABLE users;
+
+-- ALTER TABLE users_tmp RENAME TO users;
 
 
 
@@ -237,8 +321,8 @@ ALTER TABLE users_tmp RENAME TO users;
 --
 
 ----------- insert into userRoles ------------
-insert into userRoles(userId, roleId, assignedBy, expiresAt)
-values (2, 4, 1, '');
+-- insert into userRoles(userId, roleId, assignedBy, expiresAt)
+-- values (2, 4, 1, '');
 --
 -------------  Query users,roles  ----------------
 -- SELECT

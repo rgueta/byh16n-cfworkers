@@ -11,7 +11,8 @@ REFRESH_TOKEN_EXPIRY = 1382000  # 16 * 24 * 60 * 60 (16 dias en seg.)
 REFRESH_TOKEN_LIMIT = 432000 #(5 * 24 * 60 * 60) # ( 5 dias en seg.)
 BACKSTAGE_TOKEN_EXPIRY = 86400000 # 24 * 60 * 60 * 1000  (1 dia en milisegundos)
 RESEND_API_KEY = 're_7Mut4qEb_FVKrMEVwKr7z4L1hHtgJJGZc'
-public_host='https://byh16.bytheg.workers.dev'
+public_host='http://192.168.1.170:8787'
+#public_host='https://byh16.bytheg.workers.dev'
 images_root="https://byh16.bytheg.workers.dev"
 
 

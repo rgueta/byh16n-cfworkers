@@ -33,7 +33,6 @@ cpusRoutes.get("/:userId", async (c) => {
       return c.json({ error: "codigos no encontrados" }, 401);
     }
 
-    console.log("cpus: ", data);
     return c.json(data || {}, 200);
   } catch (err) {
     return c.json({ msg: err }, 404);
