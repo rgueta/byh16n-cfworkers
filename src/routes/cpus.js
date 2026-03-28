@@ -12,11 +12,7 @@ cpusRoutes.get("/:userId", async (c) => {
           cp.id,
           cp.name,
           co.shortName || '.' || s.shortName || '.' || ci.shortName ||
-          '.' || d.shortName || '.' || cp.shortName ||
-          CASE WHEN COUNT(c.shortName) > 0
-               THEN '.' || GROUP_CONCAT(c.shortName, '.')
-               ELSE ''
-          END AS location
+          '.' || d.shortName || '.' || cp.shortName AS location
       FROM cpus cp
       LEFT JOIN divisions d ON d.id = cp.divisionId
       LEFT JOIN cities ci ON ci.id = d.cityId

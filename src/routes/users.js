@@ -96,6 +96,8 @@ usersRoutes.post("/new/:userId", async (c) => {
     const userId = c.req.param("userId");
     const pkg = await c.req.json();
 
+    console.log("pkg antes: ", pkg);
+
     // Crear token
     const setupToken = crypto.randomUUID();
     const expires = new Date(Date.now() + c.env.BACKSTAGE_TOKEN_EXPIRY); // Expira en 24 hora
@@ -122,6 +124,10 @@ usersRoutes.post("/new/:userId", async (c) => {
     // Agregar datos del token para setup password
     pkg.setup_token = setupToken;
     pkg.setup_expires = expiresISO;
+
+    console.log("pkg:", pkg);
+
+    return c.json({ success: true, msg: "testing" }, 200);
 
     if (await RowExists(c.env.DB, "users", { email: pkg.email })) {
       return c.json(
