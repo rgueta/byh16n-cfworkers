@@ -214,7 +214,6 @@ usersRoutes.post("/new/:userId", async (c) => {
       console.log("Error al enviar correo, ", (await emailResponse).details);
     }
 
-    console.log("emailResponse: ", emailResponse);
     // Respuesta exitosa
     return c.json(
       {
