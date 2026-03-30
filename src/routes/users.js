@@ -93,10 +93,8 @@ usersRoutes.get(
 
 usersRoutes.post("/new/:userId", async (c) => {
   try {
-    const userId = c.req.param("userId");
+    let userId = c.req.param("userId");
     const pkg = await c.req.json();
-
-    console.log("pkg antes: ", pkg);
 
     // Crear token
     const setupToken = crypto.randomUUID();
@@ -125,10 +123,9 @@ usersRoutes.post("/new/:userId", async (c) => {
     pkg.setup_token = setupToken;
     pkg.setup_expires = expiresISO;
 
-    console.log("pkg:", pkg);
+    // return c.json({ success: true, msg: "testing" }, 200);
 
-    return c.json({ success: true, msg: "testing" }, 200);
-
+    // Verificar si el correo ya existe
     if (await RowExists(c.env.DB, "users", { email: pkg.email })) {
       return c.json(
         {
@@ -138,6 +135,21 @@ usersRoutes.post("/new/:userId", async (c) => {
         },
         400,
       );
+    }
+
+    // Verifica si el usuraio quien lo agrega existe
+    if (!(await RowExists(c.env.DB, "users", { id: userId }))) {
+      // Obtener el ID del usuario con mayor nivel
+      const result = await c.env.DB.prepare(
+        `SELECT u.id from users u
+        INNER JOIN userRoles ur ON ur.userId = u.id
+        INNER JOIN roles r ON r.id = ur.roleId
+        GROUP BY u.id
+        ORDER BY r.level DESC;`,
+      ).first();
+
+      // Extraemos solo la propiedad 'id' del objeto resultante
+      userId = result ? result.id : null;
     }
 
     const result = addRecord(c.env.DB, "users", pkg);
@@ -187,10 +199,12 @@ usersRoutes.post("/new/:userId", async (c) => {
     }
 
     // ====== crea el correo pwdRst ==================
+
     const emailResponse = sendPwdRST(
       pkg.name,
       isDemo ? adminEmail : pkg.email,
       setupToken,
+      expiresISO,
       c.env.public_host,
       c.env.images_root,
       c.env.RESEND_API_KEY,
@@ -200,6 +214,7 @@ usersRoutes.post("/new/:userId", async (c) => {
       console.log("Error al enviar correo, ", (await emailResponse).details);
     }
 
+    console.log("emailResponse: ", emailResponse);
     // Respuesta exitosa
     return c.json(
       {
@@ -750,16 +765,14 @@ async function sendPwdRST(
   expires,
   publicHost,
   imagesRoot,
-  RESEND_API_KEY,
+  resend_api_key,
 ) {
   const setupUrl = `${publicHost}/setupPassword?token=${token}`;
-
   try {
     const emailRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
+        Authorization: `Bearer ${resend_api_key}`,
       },
       body: JSON.stringify({
         from: "onboarding@resend.dev",
@@ -768,7 +781,36 @@ async function sendPwdRST(
         html: await pwdRST_HTML(publicHost, imagesRoot, token, expires, name),
       }),
     });
-    return { success: true, message: "Correo enviado" };
+
+    // return { success: true, message: "Correo enviado", details: emailRes };
+
+    // IMPORTANTE: Verificar si la respuesta fue exitosa
+    if (!emailRes.ok) {
+      const errorText = await emailRes.text();
+      console.error("Resend API Error:", {
+        status: emailRes.status,
+        statusText: emailRes.statusText,
+        error: errorText,
+      });
+
+      return {
+        success: false,
+        message: "Fallo envio de correo",
+        details: {
+          status: emailRes.status,
+          error: errorText,
+        },
+      };
+    }
+
+    const responseData = await emailRes.json();
+    console.log("Email sent successfully:", responseData);
+
+    return {
+      success: true,
+      message: "Correo enviado",
+      details: responseData,
+    };
   } catch (err) {
     return {
       success: false,
@@ -944,7 +986,7 @@ async function pwdRST_HTML(publicHost, imagesRoot, token, expires, name) {
             </div>
             <h3>Reinicio de contraseña</h3>
             <p>Hola ${name} !</p>
-            <p>Hemos recibido una solicitud de reinicio de contraseña para tu cuenta, expira en: [ ${expires} ],
+            <p>Hemos recibido una solicitud de reinicio de contraseña para tu cuenta, expira en: [ ${new Date(expires).toLocaleString("es-MX")} ],
                 con gusto te ayudaremos con tu solicitud, para continuar con este proceso haz click
                 en el siguiente boton
             </p>

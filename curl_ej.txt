@@ -1,5 +1,8 @@
 
 ------- Con refresh token  ----------------
+curl -X GET http://192.168.1.179:8787/api/me/1
+
+
 curl -X GET http://192.168.1.179:8787/api/me/1 \
  -H "Authorization: Bearer  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzcxMTA5OTMzLCJleHAiOjE3NzExMTAyMzN9.tR2QCAnUY1b-2nzCAmjmC0HuD_PJx-NkIkWkvkN3QnQ" \
  -H "Content-Type: application/json" \
@@ -107,6 +110,17 @@ curl -X POST http://localhost:8787/api/auth/refresh \
 
 ------to use RESEND  --------------
 curl -X POST http://localhost:8787/api/users/backstage \
-  -H "Authorization: Bearer re_7Mut4qEb_FVKrMEVwKr7z4L1hHtgJJGZc \
+  -H 'Authorization: Bearer re_7Mut4qEb_FVKrMEVwKr7z4L1hHtgJJGZc' \
   -H "Content-Type: application/json" \
   -d "{}"
+
+
+curl -X POST 'https://api.resend.com/emails' \
+  -H 'Authorization: Bearer re_7Mut4qEb_FVKrMEVwKr7z4L1hHtgJJGZc' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "from": "onboarding@resend.dev",
+    "to": ["ricardogueta@gmail.com"],
+    "subject": "Test",
+    "html": "<p>Test</p>"
+  }'

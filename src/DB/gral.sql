@@ -51,43 +51,43 @@
 --------------  ALTER TABLES  ---------------------
 -- LOGS  ------------------------------
 --
-CREATE TABLE app_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    log_type TEXT NOT NULL,           -- 'error', 'request', 'security', 'audit'
-    event_type TEXT,                  -- 'password_recovery', 'api_error', 'auth_failure'
-    severity TEXT,                    -- 'debug', 'info', 'warning', 'error', 'critical'
+-- CREATE TABLE app_logs (
+--     id INTEGER PRIMARY KEY AUTOINCREMENT,
+--     log_type TEXT NOT NULL,           -- 'error', 'request', 'security', 'audit'
+--     event_type TEXT,                  -- 'password_recovery', 'api_error', 'auth_failure'
+--     severity TEXT,                    -- 'debug', 'info', 'warning', 'error', 'critical'
 
-    -- Datos de la petición
-    endpoint TEXT,
-    method TEXT,                      -- 'GET', 'POST', 'PUT', 'DELETE'
-    status_code INTEGER,
-    response_time_ms INTEGER,
+--     -- Datos de la petición
+--     endpoint TEXT,
+--     method TEXT,                      -- 'GET', 'POST', 'PUT', 'DELETE'
+--     status_code INTEGER,
+--     response_time_ms INTEGER,
 
-    -- Datos del usuario
-    user_id TEXT,
-    user_email TEXT,
-    client_ip TEXT,
-    user_agent TEXT,
+--     -- Datos del usuario
+--     user_id TEXT,
+--     user_email TEXT,
+--     client_ip TEXT,
+--     user_agent TEXT,
 
-    -- Contenido
-    request_body TEXT,                -- JSON string
-    error_message TEXT,
-    error_trace TEXT,                 -- Stack trace
-    additional_data TEXT,             -- JSON string para datos adicionales
+--     -- Contenido
+--     request_body TEXT,                -- JSON string
+--     error_message TEXT,
+--     error_trace TEXT,                 -- Stack trace
+--     additional_data TEXT,             -- JSON string para datos adicionales
 
-    -- Metadatos
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    created_date DATE DEFAULT CURRENT_DATE,
-    created_time TIME DEFAULT CURRENT_TIME
-);
+--     -- Metadatos
+--     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+--     created_date DATE DEFAULT CURRENT_DATE,
+--     created_time TIME DEFAULT CURRENT_TIME
+-- );
 
--- Índices para búsquedas eficientes
-CREATE INDEX idx_log_type ON app_logs(log_type);
-CREATE INDEX idx_event_type ON app_logs(event_type);
-CREATE INDEX idx_created_at ON app_logs(created_at);
-CREATE INDEX idx_user_id ON app_logs(user_id);
-CREATE INDEX idx_endpoint ON app_logs(endpoint);
-CREATE INDEX idx_severity ON app_logs(severity);
+-- -- Índices para búsquedas eficientes
+-- CREATE INDEX idx_log_type ON app_logs(log_type);
+-- CREATE INDEX idx_event_type ON app_logs(event_type);
+-- CREATE INDEX idx_created_at ON app_logs(created_at);
+-- CREATE INDEX idx_user_id ON app_logs(user_id);
+-- CREATE INDEX idx_endpoint ON app_logs(endpoint);
+-- CREATE INDEX idx_severity ON app_logs(severity);
 
 
 
@@ -403,3 +403,11 @@ CREATE INDEX idx_severity ON app_logs(severity);
 -- Ext: Mar 02 12:50:22
 --"refreshToken":
 --eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwidHlwZSI6InJlZnJlc2giLCJqdGkiOiJkOTI2ODZmYjdmNzQwNTI4NjY2NDY2OGVmNjdlZGE1ZCIsImlhdCI6MTc3MTE4NDY1MCwiZXhwIjoxNzcyNTY2NjUwfQ.qfguIM0o2wH1WFptvqzrmRFgzUiWt7irxs4lUGeECiE
+
+
+
+SELECT u.id from users u
+INNER JOIN userRoles ur ON ur.userId = u.id
+INNER JOIN roles r ON r.id = ur.roleId
+GROUP BY u.id
+ORDER BY r.level DESC;
