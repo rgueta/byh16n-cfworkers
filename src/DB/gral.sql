@@ -126,12 +126,29 @@
 
 
 
+-- CODES  -------------------------------------------
+
+-- CREATE TABLE "codes_tmp" (
+--    id INTEGER PRIMARY KEY AUTOINCREMENT,
+--    code TEXT,
+--    userId INTEGER,
+--    device_plaform TEXT,
+--    initial TEXT,
+--    expiry TEXT,
+--    enable INTEGER NOT NULL DEFAULT 1 CHECK (enable IN (0,1)),
+--    comment TEXT,
+--    createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--    updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+--    );
+
+-- DROP TABLE codes;
+
+-- ALTER TABLE codes_tmp RENAME TO codes;
+
 --
 --
---
---
---
--- USERS
+-- USERS   ------------------------------------------------
 
 -- CREATE TABLE users_tmp (
 --   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -163,8 +180,6 @@
 -- DROP TABLE users;
 
 -- ALTER TABLE users_tmp RENAME TO users;
-
-
 
 
 
@@ -405,9 +420,6 @@
 --eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwidHlwZSI6InJlZnJlc2giLCJqdGkiOiJkOTI2ODZmYjdmNzQwNTI4NjY2NDY2OGVmNjdlZGE1ZCIsImlhdCI6MTc3MTE4NDY1MCwiZXhwIjoxNzcyNTY2NjUwfQ.qfguIM0o2wH1WFptvqzrmRFgzUiWt7irxs4lUGeECiE
 
 
-
-SELECT u.id from users u
-INNER JOIN userRoles ur ON ur.userId = u.id
-INNER JOIN roles r ON r.id = ur.roleId
-GROUP BY u.id
-ORDER BY r.level DESC;
+SELECT sql
+FROM sqlite_master
+WHERE type = 'table' AND name = 'codes';

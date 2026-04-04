@@ -89,3 +89,44 @@ export const insertLog = async (DB, logData) => {
     return { success: false, error: error.message };
   }
 };
+
+export const addRecord = async (DB, table, fields) => {
+  // Validar que hay campos para insertar
+  if (!fields || Object.keys(fields).length === 0) {
+    throw new Error("No se proporcionaron campos para insertar");
+  }
+
+  // Obtener las columnas y valores
+  const columns = Object.keys(fields);
+  const values = Object.values(fields);
+
+  // Crear placeholders para SQL (?, ?, ?)
+  const placeholders = values.map(() => "?").join(", ");
+
+  // Construir la consulta SQL
+  const sql = `INSERT INTO ${table} (${columns.join(", ")}) VALUES (${placeholders})`;
+
+  try {
+    // Ejecutar la inserción
+    const result = await DB.prepare(sql)
+      .bind(...values)
+      .run();
+
+    // Obtener el ID del registro insertado
+    const lastId = result.meta.last_row_id;
+
+    // Obtener el registro completo recién insertado
+    const selectSql = `SELECT * FROM ${table} WHERE id = ?`;
+    const insertedRecord = await DB.prepare(selectSql).bind(lastId).first(); // .first() retorna un solo registro
+
+    return {
+      success: true,
+      meta: result.meta,
+      id: lastId,
+      data: insertedRecord,
+    };
+  } catch (error) {
+    console.error(`Error insertando en ${table}:`, error);
+    throw new Error(`Error al insertar registro: ${error.message}`);
+  }
+};
