@@ -8,6 +8,12 @@ import coresRoutes from "./routes/cores.js";
 import roleRoutes from "./routes/roles.js";
 import cpusRoutes from "./routes/cpus.js";
 import pwdRstRoutes from "./routes/pwdRST.js";
+import r2Routes from "./routes/r2.js";
+import infoRoutes from "./routes/information.js";
+import countriesRoutes from "./routes/countries.js";
+import statesRoutes from "./routes/states.js";
+import citiesRoutes from "./routes/cities.js";
+import divisionsRoutes from "./routes/divisions.js";
 
 // ----  JWT  -----
 import { hashPwd, verifyPwd, sha256 } from "./auth/pwd.js";
@@ -22,8 +28,9 @@ app.use("*", corsMiddleware);
 app.options("*", (c) => c.text("", 204));
 
 app.get("/api/config", async (c) => {
-  const result = await c.env.DB.prepare(
-    `
+  try {
+    const result = await c.env.DB.prepare(
+      `
     SELECT c.debug,c.send_sms, c.backendUrl, c.localUrl,c.serverUrl,
       json_group_array(ai.device_uuid) as admin_device,
       json_group_array(ai.sim) as admin_sim,
@@ -33,28 +40,30 @@ app.get("/api/config", async (c) => {
     LEFT JOIN admin_info ai ON ai.id = ca.adminInfoId
     GROUP BY c.id
     `,
-  ).all();
+    ).all();
 
-  // const admin_device = result.admin_device
-  //   ? JSON.parse(result.admin_device)
-  //   : [];
-  // result.admin_device = admin_device;
+    // const admin_device = result.admin_device
+    //   ? JSON.parse(result.admin_device)
+    //   : [];
+    // result.admin_device = admin_device;
 
-  // Transformar los resultados: parsear roles de string a array
-  const config = result.results.map((item) => ({
-    ...item,
-    admin_device: JSON.parse(item.admin_device),
-    admin_sim: JSON.parse(item.admin_sim),
-    admin_email: JSON.parse(item.admin_email),
-  }));
+    // Transformar los resultados: parsear roles de string a array
+    const config = result.results.map((item) => ({
+      ...item,
+      admin_device: JSON.parse(item.admin_device),
+      admin_sim: JSON.parse(item.admin_sim),
+      admin_email: JSON.parse(item.admin_email),
+    }));
 
-  // const admin_sim = result.admin_sim ? JSON.parse(result.admin_sim) : [];
-  // result.admin_sim = admin_sim;
-
-  // const admin_email = result.admin_email ? JSON.parse(result.admin_email) : [];
-  // result.admin_email = admin_email;
-
-  return c.json(config);
+    return c.json(config);
+  } catch (err) {
+    console.log("api/config-Error: ", err);
+    return c.json({
+      success: false,
+      msg: "error, en api/config",
+      details: err.message,
+    });
+  }
 });
 
 app.get(
@@ -169,6 +178,12 @@ app.route("/api/cores", coresRoutes);
 app.route("/api/codes", codeRoutes);
 app.route("/api/roles", roleRoutes);
 app.route("/api/pwdReset", pwdRstRoutes);
+app.route("/api/r2", r2Routes);
+app.route("/api/info", infoRoutes);
+app.route("/api/countries", countriesRoutes);
+app.route("/api/states", statesRoutes);
+app.route("/api/cities", citiesRoutes);
+app.route("/api/divisions", divisionsRoutes);
 
 app.get("/api/env", (c) => {
   return c.json({

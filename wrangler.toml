@@ -2,26 +2,50 @@ name = "byh16"
 main = "src/index.js"
 compatibility_date = "2025-01-01"
 
+# --- CONFIGURACIÓN GLOBAL / PRODUCCIÓN ---
 [vars]
-NODE_ENV = "development"
+NODE_ENV = "production"
 APP_NAME = "cf-api"
-JWT_SECRET="long-life-bytheg-project-123456789"
-ACCESS_TOKEN_EXPIRY = 300  # 5 * 60 ( 5 min en seg.)
-REFRESH_TOKEN_EXPIRY = 1382000  # 16 * 24 * 60 * 60 (16 dias en seg.)
-REFRESH_TOKEN_LIMIT = 432000 #(5 * 24 * 60 * 60) # ( 5 dias en seg.)
-BACKSTAGE_TOKEN_EXPIRY = 86400000 # 24 * 60 * 60 * 1000  (1 dia en milisegundos)
-RESEND_API_KEY = "re_7Mut4qEb_FVKrMEVwKr7z4L1hHtgJJGZc"
-public_host='http://192.168.1.170:8787'
-#public_host='https://byh16.bytheg.workers.dev'
-images_root="https://byh16.bytheg.workers.dev"
+JWT_SECRET = "tu-secreto-de-produccion"
+public_host = "https://byh16.bytheg.workers.dev"
 
+[[kv_namespaces]]
+binding = "REFRESH_KV"
+id = "bd49fbf6ef30464e9241a9b21452f1cc"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "byh16-bucket-prod"
+
+# --- ENTORNO LOCAL (-e local) ---
+
+[env.local.vars]
+NODE_ENV = "development"
+APP_NAME = "cf-api-local"
+JWT_SECRET = "long-life-bytheg-project-123456789"
+ACCESS_TOKEN_EXPIRY = 300
+REFRESH_TOKEN_EXPIRY = 1382000
+REFRESH_TOKEN_LIMIT = 432000
+BACKSTAGE_TOKEN_EXPIRY = 86400000
+RESEND_API_KEY = "re_7Mut4qEb_FVKrMEVwKr7z4L1hHtgJJGZc"
+public_host = "http://192.168.1.170:8787"
+images_root = "https://byh16.bytheg.workers.dev"
+
+[env.local]
+[[env.local.d1_databases]]
+binding = "DB"
+database_name = "byh16-local"
+database_id = "c4418813-ba2e-48ab-a6f5-1b27375d2ebd"
+
+[[env.local.kv_namespaces]]
+binding = "REFRESH_KV"
+id = "bd49fbf6ef30464e9241a9b21452f1cc"
+
+[[env.local.r2_buckets]]
+binding = "BUCKET"
+bucket_name = "mi-bucket-local"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "byh16"
 database_id = "c4418813-ba2e-48ab-a6f5-1b27375d2ebd"
-
-[[kv_namespaces]]
-binding = "REFRESH_KV"
-id = "bd49fbf6ef30464e9241a9b21452f1cc"
-preview_id = ""
