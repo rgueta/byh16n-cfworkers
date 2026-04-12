@@ -48,6 +48,15 @@ infoRoutes.get("/:userId/:now", async (c) => {
         path: "http://192.168.1.170:8787/api/r2/get/",
         updatedAt: "2024/01/28 21:46:11",
       },
+      {
+        id: 2,
+        title: "Aqui va el titulo..",
+        url: "http://google.com",
+        description: "Description",
+        image: "MX.BC.TJ.6.CG.SJ/42026/1775799917886_image.jpg",
+        path: "http://192.168.1.170:8787/api/r2/get/",
+        updatedAt: "2024/01/28 21:46:11",
+      },
     ];
 
     return c.json(data || {}, 200);

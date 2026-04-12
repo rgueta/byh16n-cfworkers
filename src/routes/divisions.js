@@ -34,7 +34,7 @@ divisionsRoutes.get("/:country/:state/:cityId/:userId", async (c) => {
       .all();
 
     if (!data) {
-      return c.json({ error: "division no encontradas" }, 401);
+      return c.json({ error: "division no encontrada" }, 401);
     }
 
     return c.json(data.results || {}, 200);

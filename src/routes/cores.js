@@ -48,6 +48,42 @@ coresRoutes.get("/:userId", async (c) => {
   }
 });
 
+coresRoutes.get("/basic/:cpuId/:userId", async (c) => {
+  try {
+    const cpuId = c.req.param("cpuId");
+    const userId = c.req.param("userId");
+
+    if (!cpuId) {
+      return c.json({
+        success: false,
+        error: "parametros requeridos",
+        details: "Falta parametro cpuId",
+      });
+    }
+
+    const data = await c.env.DB.prepare(
+      `
+      SELECT
+          id,
+          name,
+          shortName
+      FROM cores
+      WHERE cpuId = ?;
+      `,
+    )
+      .bind(cpuId)
+      .all();
+
+    if (!data) {
+      return c.json({ error: "cores no encontrados" }, 401);
+    }
+
+    return c.json(data.results || {}, 200);
+  } catch (err) {
+    return c.json({ success: false, msg: err.message }, 404);
+  }
+});
+
 coresRoutes.get("/cpu/:cpuId/:userId", async (c) => {
   const cpuId = c.req.param("cpuId");
   const userId = c.req.param("userId");

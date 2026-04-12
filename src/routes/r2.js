@@ -1,11 +1,12 @@
 import { Hono } from "hono";
-
+import { monthlyFolder } from "../tools.js";
 const r2Routes = new Hono();
 
 // Listar archivos en el bucket
 r2Routes.get("/list", async (c) => {
   try {
     const objects = await c.env.BUCKET.list();
+
     return c.json({
       success: true,
       objects: objects.objects,
@@ -15,18 +16,90 @@ r2Routes.get("/list", async (c) => {
   }
 });
 
+// En tu archivo principal del Worker (Hono)
+r2Routes.get("/view/:key", async (c) => {
+  const key = decodeURIComponent(c.req.param("key"));
+
+  console.log("decoded key: ", key);
+  // return c.text("Imagen no encontrada", 200);
+
+  try {
+    // Obtener el objeto del bucket local
+    const object = await c.env.BUCKET.get(key);
+
+    if (!object) {
+      return c.text("Imagen no encontrada", 404);
+    }
+
+    // Determinar el tipo de contenido
+    const contentType = object.httpMetadata?.contentType || "image/jpeg";
+
+    // Devolver la imagen
+    return new Response(object.body, {
+      headers: {
+        "Content-Type": contentType,
+        "Cache-Control": "no-cache",
+      },
+    });
+  } catch (error) {
+    console.error("Error al obtener imagen:", error);
+    return c.text("Error al cargar la imagen", 500);
+  }
+});
+
+// Agregar el dashboard de desarrollo
+r2Routes.all("/dashboard/*", async (c) => {
+  const { default: createHandler } = await import("cf-local-helpers");
+  const dashboard = createHandler({ basePath: "/dashboard" });
+  return dashboard.fetch(c.req.raw, c.env, c.executionCtx);
+});
+
 // Subir archivo
 r2Routes.post("/upload", async (c) => {
   try {
     const formData = await c.req.formData();
+    // formData.set(
+    //   "locationFolder",
+    //   formData.get("locationFolder") + "/" + (await monthlyFolder()),
+    // );
+
     const file = formData.get("file");
-    const key = formData.get("key") || file.name;
+    const key = formData.key || file.name;
+
+    const folderPath =
+      formData.get("locationFolder") + "/" + (await monthlyFolder());
+
+    const fullKey = `${folderPath}/${key}`;
+    console.log("fullKey: ", fullKey);
+
+    const fileBuffer = await file.arrayBuffer();
+
+    // const key =
+    //   formData.get("locationFolder") + "/" + (await monthlyFolder()) ||
+    //   file.name;
+
+    console.log("formData: ", formData);
+
+    return c.json({ success: true }, 200);
 
     if (!file) {
       return c.json({ error: "No file provided" }, 400);
     }
 
-    await c.env.BUCKET.put(key, file);
+    // await c.env.BUCKET.put(key, file);
+    //
+    // Guardar en R2 con la ruta completa
+    await c.env.BUCKET.put(fullKey, fileBuffer, {
+      httpMetadata: {
+        contentType: file.type,
+        contentDisposition: `inline; filename="${key}"`,
+      },
+      customMetadata: {
+        originalName: key,
+        uploadPath: folderPath,
+        uploadedAt: new Date().toISOString(),
+      },
+    });
 
     return c.json({
       success: true,
@@ -34,6 +107,7 @@ r2Routes.post("/upload", async (c) => {
       size: file.size,
     });
   } catch (error) {
+    console.log("error: ", error.message);
     return c.json({ error: error.message }, 500);
   }
 });

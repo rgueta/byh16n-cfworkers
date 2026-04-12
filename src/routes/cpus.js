@@ -35,4 +35,40 @@ cpusRoutes.get("/:userId", async (c) => {
   }
 });
 
+cpusRoutes.get("/basic/:divisionId/:userId", async (c) => {
+  try {
+    const divisionId = c.req.param("divisionId");
+    const userId = c.req.param("userId");
+
+    if (!divisionId) {
+      return c.json({
+        success: false,
+        error: "parametros requeridos",
+        details: "Falta parametro divisionId",
+      });
+    }
+
+    const data = await c.env.DB.prepare(
+      `
+      SELECT
+          id,
+          name,
+          shortName
+      FROM cpus
+      WHERE divisionId = ?;
+      `,
+    )
+      .bind(divisionId)
+      .all();
+
+    if (!data) {
+      return c.json({ error: "cpus no encontrados" }, 401);
+    }
+
+    return c.json(data.results || {}, 200);
+  } catch (err) {
+    return c.json({ success: false, msg: err.message }, 404);
+  }
+});
+
 export default cpusRoutes;
