@@ -5,6 +5,7 @@ export const corsMiddleware = cors({
     "http://localhost:8100", // Ionic dev
     "http://127.0.0.1:8100",
     "capacitor://localhost",
+    "http://localhost",
   ],
   allowHeaders: ["Authorization", "Content-Type"],
   allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
