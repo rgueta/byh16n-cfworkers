@@ -124,27 +124,30 @@
 -- CREATE INDEX idx_endpoint ON app_logs(endpoint);
 -- CREATE INDEX idx_severity ON app_logs(severity);
 
+-- INFORMATION  -----------------------------------------------
+-- CREATE TABLE information_tmp (
+--   	id INTEGER PRIMARY KEY AUTOINCREMENT,
+--   	title TEXT,
+--   	url	TEXT,
+--   	image TEXT,
+--   	path TEXT,
+--   	description TEXT,
+--   	location TEXT,
+--   	size TEXT,
+--   	like INTEGER DEFAULT 0,
+--   	disable	INTEGER DEFAULT 0,
+--     userId INTEGER,
+--   	createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--   	updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     FOREIGN KEY (userId) REFERENCES users(id)
+--   );
 
+-- INSERT INTO information_tmp (title, url, image, path, description, location, size, like, disable, userId)
+-- SELECT title, url, image, path, description, location, size, like, disable, 1 from information;
 
--- CODES  -------------------------------------------
+-- DROP TABLE information;
 
--- CREATE TABLE "codes_tmp" (
---    id INTEGER PRIMARY KEY AUTOINCREMENT,
---    code TEXT,
---    userId INTEGER,
---    device_plaform TEXT,
---    initial TEXT,
---    expiry TEXT,
---    enable INTEGER NOT NULL DEFAULT 1 CHECK (enable IN (0,1)),
---    comment TEXT,
---    createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
---    updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
---    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
---    );
-
--- DROP TABLE codes;
-
--- ALTER TABLE codes_tmp RENAME TO codes;
+-- ALTER TABLE information_tmp RENAME TO information;
 
 --
 --
@@ -182,12 +185,26 @@
 -- ALTER TABLE users_tmp RENAME TO users;
 
 
+-- CODES  -------------------------------------------
+
+-- CREATE TABLE "codes_tmp" (
+--    id INTEGER PRIMARY KEY AUTOINCREMENT,
+--    code TEXT,
+--    userId INTEGER,
+--    device_plaform TEXT,
+--    initial TEXT,
+--    expiry TEXT,
+--    enable INTEGER NOT NULL DEFAULT 1 CHECK (enable IN (0,1)),
+--    comment TEXT,
+--    createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--    updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+--    );
 
 -- insert into codes_tmp (code, userId, device_plaform, initial, expiry, enable, createdAt, updatedAt )
 -- select code, userId, device_plaform, initial, expiry, enable, createdAt, updatedAt  from codes;
 
 -- DROP TABLE codes;
-
 -- ALTER TABLE codes_tmp RENAME TO codes;
 
 -- CREATE TABLE code_events_tmp (
@@ -420,6 +437,6 @@
 --eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwidHlwZSI6InJlZnJlc2giLCJqdGkiOiJkOTI2ODZmYjdmNzQwNTI4NjY2NDY2OGVmNjdlZGE1ZCIsImlhdCI6MTc3MTE4NDY1MCwiZXhwIjoxNzcyNTY2NjUwfQ.qfguIM0o2wH1WFptvqzrmRFgzUiWt7irxs4lUGeECiE
 
 
-SELECT sql
-FROM sqlite_master
-WHERE type = 'table' AND name = 'codes';
+-- SELECT sql
+-- FROM sqlite_master
+-- WHERE type = 'table' AND name = 'codes';

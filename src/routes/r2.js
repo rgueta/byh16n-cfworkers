@@ -91,6 +91,7 @@ r2Routes.post("/upload", async (c) => {
       description: formData.get("description"),
       location: formData.get("location"),
       size: formData.get("size"),
+      userId: formData.get("userId"),
     };
 
     if (!file) {
@@ -139,7 +140,36 @@ r2Routes.post("/upload", async (c) => {
 // Obtener archivo
 r2Routes.get("/get/:key", async (c) => {
   try {
-    const key = c.req.param("key");
+    // 1. Decodificar la key por si trae caracteres especiales como '/' (%2F)
+    const key = decodeURIComponent(c.req.param("key"));
+
+    const object = await c.env.BUCKET.get(key);
+
+    if (!object) {
+      return c.json({ error: "File not found" }, 404);
+    }
+
+    // 2. Extraer metadatos y preparar headers
+    const headers = new Headers();
+    object.writeHttpMetadata(headers); // Esto copia automáticamente contentType, etc.
+    headers.set("etag", object.httpEtag);
+
+    // Forzamos el Content-Type si R2 local no lo detecta bien
+    const contentType = object.httpMetadata?.contentType || "image/jpeg";
+    headers.set("Content-Type", contentType);
+
+    // 3. Retornar el cuerpo del objeto (un ReadableStream)
+    return new Response(object.body, {
+      headers: headers,
+    });
+  } catch (error) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+r2Routes.get("/get_old/:key", async (c) => {
+  try {
+    const key = decodeURIComponent(c.req.param("key"));
     const object = await c.env.BUCKET.get(key);
 
     if (!object) {
