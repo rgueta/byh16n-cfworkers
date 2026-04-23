@@ -229,10 +229,19 @@
 
 -------------------
 -- insert into code_events (codeId, coreSim, doorName, picId)
--- values (1, '+526641752182','Entrada Norte','N/A' ),
--- (2, '+526641752182','Entrada Norte','N/A' ),
--- (3, '+526641752182','Entrada Norte','N/A' );
+-- values (54, '+526641752182','Entrada Norte','N/A' ),
+-- (55, '+526641752182','Entrada Norte','N/A' ),
+-- (56, '+526641752182','Entrada Norte','N/A' );
 
+
+
+-- SELECT ce.*,c.code,u.house
+-- FROM code_events ce
+-- LEFT JOIN codes c ON c.id = ce.codeId
+-- LEFT JOIN users u ON u.id = c.userId
+-- WHERE u.id = 1 and ce.createdAt > '2026-04-04T00:00:00Z'
+-- ORDER BY ce.createdAt DESC
+-- LIMIT 30;
 ----------------------CPUS  -------------------
 --
 -- CREATE TABLE cpus_tmp

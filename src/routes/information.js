@@ -35,7 +35,7 @@ infoRoutes.get("/recent/:recent/:limit", async (c) => {
 
     const { results } = await c.env.DB.prepare(query).bind(recent, limit).all();
 
-    console.log("data: ", results);
+    console.log("info: ", results.length);
 
     if (!results) {
       return c.json({ error: "info no encontrados" }, 401);

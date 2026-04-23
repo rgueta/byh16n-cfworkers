@@ -4,6 +4,56 @@ const codeRoutes = new Hono();
 import { addRecord } from "./../tools.js";
 
 codeRoutes.get(
+  "/recent/:userId/:recent/:limit",
+  verifyToken(),
+  verifyRoleLevel("neighbor"),
+  // codeRoutes.get("/recent/:userId/:recent/:limit",
+  async (c) => {
+    const userId = c.req.param("userId");
+    const recent = c.req.param("recent");
+    const limit = c.req.param("limit");
+
+    console.log(`userId: ${userId}, recent: ${recent}, limit: ${limit}`);
+
+    try {
+      const { results } = await c.env.DB.prepare(
+        `
+        SELECT
+        c.id,
+        c.code,
+        c.createdAt,
+        c.initial,
+        c.expiry,
+        c.enable,
+        c.comment,
+        u.id AS userId,
+        u.username,
+        u.email,
+        u.avatar
+      FROM codes c
+      LEFT JOIN users u ON c.userId = u.id
+      WHERE u.id = ? and c.createdAt > ?
+      ORDER BY c.expiry DESC
+      LIMIT ?;
+      `,
+      )
+        .bind(userId, recent, limit)
+        .all();
+
+      console.log("codes: ", results.length);
+
+      if (!results) {
+        return c.json({ error: "codigos no encontrados" }, 401);
+      }
+
+      return c.json(results, 200);
+    } catch (err) {
+      return c.json({ msg: err.message }, 404);
+    }
+  },
+);
+
+codeRoutes.get(
   "/user/:userId",
   verifyToken(),
   verifyRoleLevel("neighbor"),

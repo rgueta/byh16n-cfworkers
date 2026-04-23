@@ -31,6 +31,42 @@ codeEventsRoutes.get(
   },
 );
 
+codeEventsRoutes.get(
+  "/recent/:userId/:recent/:limit",
+  // verifyToken(),
+  // verifyRoleLevel("neighbor"),
+  async (c) => {
+    try {
+      const userId = c.req.param("userId");
+      const recent = c.req.param("recent");
+      const limit = c.req.param("limit");
+      if (userId === undefined || recent === undefined || limit === undefined) {
+        return c.json({ msg: "faltan parametros para la consulta" }, 303);
+      }
+
+      const query = `
+        SELECT ce.*,c.code,u.house
+        FROM code_events ce
+        LEFT JOIN codes c ON c.id = ce.codeId
+        LEFT JOIN users u ON u.id = c.userId
+        WHERE u.id = ? and ce.createdAt > ?
+        ORDER BY ce.createdAt DESC
+        LIMIT ?;`;
+
+      const { results } = await c.env.DB.prepare(query)
+        .bind(userId, recent, limit)
+        .all();
+
+      // console.log("query: ", result.query);
+
+      console.log("codeEvents: ", results.length);
+      return c.json(results, 200);
+    } catch (err) {
+      return c.json({ msg: err.message }, 404);
+    }
+  },
+);
+
 export function debugSQL(sql, binds = []) {
   let i = 0;
 
