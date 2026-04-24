@@ -5,8 +5,8 @@ import { addRecord } from "./../tools.js";
 
 codeRoutes.get(
   "/recent/:userId/:recent/:limit",
-  verifyToken(),
-  verifyRoleLevel("neighbor"),
+  // verifyToken(),
+  // verifyRoleLevel("neighbor"),
   // codeRoutes.get("/recent/:userId/:recent/:limit",
   async (c) => {
     const userId = c.req.param("userId");

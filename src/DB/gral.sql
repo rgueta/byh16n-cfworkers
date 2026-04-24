@@ -229,7 +229,7 @@
 
 -------------------
 -- insert into code_events (codeId, coreSim, doorName, picId)
--- values (54, '+526641752182','Entrada Norte','N/A' ),
+-- values (1, '+526641752182','Entrada Sur','N/A' );
 -- (55, '+526641752182','Entrada Norte','N/A' ),
 -- (56, '+526641752182','Entrada Norte','N/A' );
 
