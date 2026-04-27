@@ -207,20 +207,23 @@
 -- DROP TABLE codes;
 -- ALTER TABLE codes_tmp RENAME TO codes;
 
--- CREATE TABLE code_events_tmp (
--- id INTEGER PRIMARY KEY AUTOINCREMENT,
--- codeId INTEGER,
--- coreSim TEXT,
--- doorName TEXT,
--- picId TEXT,
--- createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
--- updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
--- FOREIGN KEY (codeId) REFERENCES codes(id) ON DELETE CASCADE
--- );
+CREATE TABLE code_events_tmp (
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+codeId INTEGER,
+coreId INTEGER,
+picId TEXT,
+createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+FOREIGN KEY (codeId) REFERENCES codes(id) ON DELETE CASCADE,
+FOREIGN KEY (coreId) REFERENCES cores(id) ON DELETE CASCADE
+);
 
--- DROP TABLE code_events;
+-- insert into code_events_tmp (id, codeId, coreId, picId, createdAt, updatedAt)
+-- select id, codeId, 1, picId, createdAt, updatedAt from code_events;
 
--- ALTER TABLE code_events_tmp RENAME TO code_events;
+DROP TABLE code_events;
+
+ALTER TABLE code_events_tmp RENAME TO code_events;
 
 -- insert into codes (code, userId, device_plaform, initial, expiry, enable)
 --            values ('A688A9', 1, 'Android', '2026-02-09 09:32:43','2026-03-09 19:32:43',1),
@@ -229,7 +232,7 @@
 
 -------------------
 -- insert into code_events (codeId, coreSim, doorName, picId)
--- values (1, '+526641752182','Entrada Sur','N/A' );
+-- values (58, '+526641752182','Entrada Sur','N/A' );
 -- (55, '+526641752182','Entrada Norte','N/A' ),
 -- (56, '+526641752182','Entrada Norte','N/A' );
 

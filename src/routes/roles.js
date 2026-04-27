@@ -5,8 +5,8 @@ const rolesRoutes = new Hono();
 
 rolesRoutes.get(
   "/:userId",
-  verifyToken(),
-  verifyRoleLevel("neighbor"),
+  // verifyToken(),
+  // verifyRoleLevel("neighbor"),
   async (c) => {
     const userId = c.req.param("userId");
     try {

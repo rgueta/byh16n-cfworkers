@@ -31,7 +31,7 @@ codeRoutes.get(
         u.email,
         u.avatar
       FROM codes c
-      LEFT JOIN users u ON c.userId = u.id
+      INNER JOIN users u ON c.userId = u.id
       WHERE u.id = ? and c.createdAt > ?
       ORDER BY c.expiry DESC
       LIMIT ?;

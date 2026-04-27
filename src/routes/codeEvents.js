@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { verifyToken, verifyRoleLevel } from "../auth/auth.js";
+import { addRecord } from "../tools.js";
 
 const codeEventsRoutes = new Hono();
 
@@ -45,9 +46,10 @@ codeEventsRoutes.get(
       }
 
       const query = `
-        SELECT ce.*,c.code,u.house
+        SELECT ce.*,c.code,u.house, co.name as coreName
         FROM code_events ce
         LEFT JOIN codes c ON c.id = ce.codeId
+        LEFT JOIN cores co ON co.id = ce.coreId
         LEFT JOIN users u ON u.id = c.userId
         WHERE u.id = ? and ce.createdAt > ?
         ORDER BY ce.createdAt DESC
@@ -66,6 +68,36 @@ codeEventsRoutes.get(
     }
   },
 );
+
+// agregar codes
+codeEventsRoutes.post("/new", async (c) => {
+  try {
+    const pkg = await c.req.json();
+    console.log(pkg);
+    const result = await addRecord(c.env.DB, "code_events", pkg);
+
+    if (!result.success) {
+      return c.json(
+        {
+          success: false,
+          error: "Fallo al agregar evento",
+        },
+        404,
+      );
+    }
+
+    return c.json({ success: true, msg: "evento agregado" }, 200);
+  } catch (error) {
+    return c.json(
+      {
+        success: false,
+        error: "Error en servidor",
+        details: error.message,
+      },
+      500,
+    );
+  }
+});
 
 export function debugSQL(sql, binds = []) {
   let i = 0;
